@@ -5,7 +5,7 @@ import { MenuScene } from './scenes/MenuScene'
 import { PauseScene } from './scenes/PauseScene'
 
 const config: Phaser.Types.Core.GameConfig = {
-  type: Phaser.AUTO,
+  type: Phaser.WEBGL,
   parent: 'game',
 
   width: 960,

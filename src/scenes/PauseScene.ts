@@ -31,10 +31,30 @@ export class PauseScene extends Phaser.Scene {
     createTextButton({
       scene: this,
       x: centerX,
-      y: centerY + 20,
+      y: centerY,
       label: 'CONTINUAR',
       onClick: () => {
         this.resumeGame()
+      },
+    })
+
+    createTextButton({
+      scene: this,
+      x: centerX,
+      y: centerY + 70,
+      label: 'REINICIAR',
+      onClick: () => {
+        this.restartGame()
+      },
+    })
+
+    createTextButton({
+      scene: this,
+      x: centerX,
+      y: centerY + 140,
+      label: 'VOLTAR AO MENU',
+      onClick: () => {
+        this.returnToMenu()
       },
     })
 
@@ -54,5 +74,15 @@ export class PauseScene extends Phaser.Scene {
   private resumeGame(): void {
     this.scene.resume(SCENE_KEYS.game)
     this.scene.stop()
+  }
+
+  private returnToMenu(): void {
+    this.scene.stop(SCENE_KEYS.game)
+    this.scene.start(SCENE_KEYS.menu)
+  }
+
+  private restartGame(): void {
+    this.scene.stop(SCENE_KEYS.game)
+    this.scene.start(SCENE_KEYS.game)
   }
 }
