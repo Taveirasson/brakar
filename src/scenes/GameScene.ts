@@ -14,6 +14,7 @@ const WALL_THICKNESS = 5
 
 const PLAYER_SIZE = 16
 const PLAYER_SPEED = 110
+const PLAYER_COLOR = 0x9b5de5
 
 const EXIT_SIZE = 18
 
@@ -29,6 +30,15 @@ const FLASHLIGHT_INTENSITY = 2.4
 const AMBIENT_LIGHT_COLOR = 0x08060c
 
 const FLASHLIGHT_RAY_COUNT = 181
+
+const MINIMAP_CELL_SIZE = 8
+const MINIMAP_PADDING = 12
+
+const MINIMAP_BACKGROUND_COLOR = 0x09070f
+const MINIMAP_FLOOR_COLOR = 0x79608f
+const MINIMAP_WALL_COLOR = 0xc1aecf
+const MINIMAP_PLAYER_COLOR = 0xf4d35e
+const MINIMAP_EXIT_COLOR = 0x55ff88
 
 type MovementKeys = {
   up: Phaser.Input.Keyboard.Key
@@ -54,8 +64,13 @@ export class GameScene extends Phaser.Scene {
   private wasdKeys!: MovementKeys
 
   private exitInformation!: FarthestCellResult
-
   private playerFoundExit = false
+
+  private minimapCamera!: Phaser.Cameras.Scene2D.Camera
+  private minimapGraphics!: Phaser.GameObjects.Graphics
+
+  private visitedCells = new Set<string>()
+  private currentMapCellKey = ''
 
   constructor() {
     super(SCENE_KEYS.game)
@@ -76,6 +91,7 @@ export class GameScene extends Phaser.Scene {
     this.configureCamera()
     this.createVisibilityMask()
     this.updateVisibilityMask()
+    this.createMinimap()
     this.configurePauseControl()
   }
 
@@ -84,6 +100,7 @@ export class GameScene extends Phaser.Scene {
     this.updateFlashlightPosition()
     this.updateFlashlightDirection()
     this.updateVisibilityMask()
+    this.updateVisitedMap()
   }
 
   private generateMaze(): void {
@@ -217,8 +234,170 @@ export class GameScene extends Phaser.Scene {
     )
   }
 
+  private createMinimap(): void {
+    this.visitedCells.clear()
+    this.currentMapCellKey = ''
+
+    const minimapWidth = MAZE_COLUMNS * MINIMAP_CELL_SIZE
+    const minimapHeight = MAZE_ROWS * MINIMAP_CELL_SIZE
+
+    const minimapX = this.scale.width - minimapWidth - MINIMAP_PADDING
+
+    const minimapY = MINIMAP_PADDING
+
+    // Capturamos os objetos do mundo antes de criar o mapa.
+    const worldObjects = [...this.children.list]
+
+    this.minimapCamera = this.cameras.add(
+      minimapX,
+      minimapY,
+      minimapWidth,
+      minimapHeight,
+      false,
+      'minimap',
+    )
+
+    this.minimapCamera.setScroll(0, 0)
+    this.minimapCamera.setBackgroundColor(MINIMAP_BACKGROUND_COLOR)
+
+    this.minimapGraphics = this.add.graphics()
+    this.minimapGraphics.setDepth(1000)
+
+    // A câmera principal não desenha o mapa.
+    this.cameras.main.ignore(this.minimapGraphics)
+
+    // A câmera do mapa não desenha o mundo.
+    this.minimapCamera.ignore(worldObjects)
+
+    this.updateVisitedMap()
+  }
+
+  private getPlayerCell(): MazeCell {
+    const row = Phaser.Math.Clamp(
+      Math.floor(this.player.y / CELL_SIZE),
+      0,
+      MAZE_ROWS - 1,
+    )
+
+    const column = Phaser.Math.Clamp(
+      Math.floor(this.player.x / CELL_SIZE),
+      0,
+      MAZE_COLUMNS - 1,
+    )
+
+    return this.maze[row][column]
+  }
+
+  private updateVisitedMap(): void {
+    const currentCell = this.getPlayerCell()
+
+    const cellKey = `${currentCell.row},${currentCell.column}`
+
+    if (cellKey === this.currentMapCellKey) {
+      return
+    }
+
+    this.currentMapCellKey = cellKey
+    this.visitedCells.add(cellKey)
+
+    this.drawMinimap(currentCell)
+  }
+
+  private drawMinimap(currentCell: MazeCell): void {
+    this.minimapGraphics.clear()
+
+    for (const row of this.maze) {
+      for (const cell of row) {
+        const cellKey = `${cell.row},${cell.column}`
+
+        if (!this.visitedCells.has(cellKey)) {
+          continue
+        }
+
+        this.drawMinimapCell(cell)
+      }
+    }
+
+    this.drawMinimapBorder()
+    this.drawMinimapExit()
+
+    const playerX =
+      currentCell.column * MINIMAP_CELL_SIZE + MINIMAP_CELL_SIZE / 2
+
+    const playerY = currentCell.row * MINIMAP_CELL_SIZE + MINIMAP_CELL_SIZE / 2
+
+    this.minimapGraphics.fillStyle(MINIMAP_PLAYER_COLOR, 1)
+
+    this.minimapGraphics.fillCircle(playerX, playerY, MINIMAP_CELL_SIZE / 2)
+  }
+
+  private drawMinimapBorder(): void {
+    const minimapWidth = MAZE_COLUMNS * MINIMAP_CELL_SIZE
+
+    const minimapHeight = MAZE_ROWS * MINIMAP_CELL_SIZE
+
+    this.minimapGraphics.lineStyle(1, MINIMAP_WALL_COLOR, 1)
+
+    this.minimapGraphics.strokeRect(
+      0.5,
+      0.5,
+      minimapWidth - 1,
+      minimapHeight - 1,
+    )
+  }
+
+  private drawMinimapExit(): void {
+    const exitCell = this.exitInformation.cell
+
+    const exitX = exitCell.column * MINIMAP_CELL_SIZE + MINIMAP_CELL_SIZE / 2
+
+    const exitY = exitCell.row * MINIMAP_CELL_SIZE + MINIMAP_CELL_SIZE / 2
+
+    this.minimapGraphics.fillStyle(MINIMAP_EXIT_COLOR, 1)
+
+    this.minimapGraphics.fillCircle(exitX, exitY, MINIMAP_CELL_SIZE / 2)
+  }
+
+  private drawMinimapCell(cell: MazeCell): void {
+    const x = cell.column * MINIMAP_CELL_SIZE
+    const y = cell.row * MINIMAP_CELL_SIZE
+
+    const right = x + MINIMAP_CELL_SIZE
+    const bottom = y + MINIMAP_CELL_SIZE
+
+    this.minimapGraphics.fillStyle(MINIMAP_FLOOR_COLOR, 1)
+
+    this.minimapGraphics.fillRect(x, y, MINIMAP_CELL_SIZE, MINIMAP_CELL_SIZE)
+
+    this.minimapGraphics.lineStyle(1, MINIMAP_WALL_COLOR, 1)
+
+    this.minimapGraphics.beginPath()
+
+    if (cell.walls.top) {
+      this.minimapGraphics.moveTo(x, y)
+      this.minimapGraphics.lineTo(right, y)
+    }
+
+    if (cell.walls.right) {
+      this.minimapGraphics.moveTo(right, y)
+      this.minimapGraphics.lineTo(right, bottom)
+    }
+
+    if (cell.walls.bottom) {
+      this.minimapGraphics.moveTo(x, bottom)
+      this.minimapGraphics.lineTo(right, bottom)
+    }
+
+    if (cell.walls.left) {
+      this.minimapGraphics.moveTo(x, y)
+      this.minimapGraphics.lineTo(x, bottom)
+    }
+
+    this.minimapGraphics.strokePath()
+  }
+
   private createPlayer(): void {
-    this.createSquareTexture('player', PLAYER_SIZE, 0x9b5de5)
+    this.createSquareTexture('player', PLAYER_SIZE, PLAYER_COLOR)
 
     const startPosition = this.getCellCenter(0, 0)
 
@@ -248,13 +427,6 @@ export class GameScene extends Phaser.Scene {
     )
     this.exit.setLighting(true)
     this.exit.setDepth(5)
-    console.log(
-      'Saída:',
-      exitCell.row,
-      exitCell.column,
-      'Distância:',
-      this.exitInformation.distance,
-    )
   }
 
   private createSquareTexture(
