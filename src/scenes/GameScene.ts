@@ -555,16 +555,12 @@ export class GameScene extends Phaser.Scene {
 
     this.physics.pause()
 
-    this.add
-      .text(this.player.x, this.player.y - 24, 'Você encontrou a saída!', {
-        fontFamily: 'monospace',
-        fontSize: '24px',
-        color: '#ffffff',
-        backgroundColor: '#20172c',
-        padding: { x: 4, y: 3 },
-      })
-      .setOrigin(0.5)
-      .setDepth(100)
+    this.cameras.main.flash(250, 244, 211, 94)
+
+    this.time.delayedCall(300, () => {
+      this.scene.pause()
+      this.scene.run(SCENE_KEYS.victory)
+    })
   }
 
   private configurePauseControl(): void {
