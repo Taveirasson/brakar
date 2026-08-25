@@ -9,22 +9,22 @@ import { SCENE_KEYS } from '../config/sceneKeys'
 const MAZE_ROWS = 18
 const MAZE_COLUMNS = 25
 
-const CELL_SIZE = 32
-const WALL_THICKNESS = 4
+const CELL_SIZE = 64
+const WALL_THICKNESS = 5
 
-const PLAYER_SIZE = 14
-const PLAYER_SPEED = 100
+const PLAYER_SIZE = 16
+const PLAYER_SPEED = 110
 
-const EXIT_SIZE = 16
+const EXIT_SIZE = 18
 
 const WORLD_WIDTH = MAZE_COLUMNS * CELL_SIZE
 const WORLD_HEIGHT = MAZE_ROWS * CELL_SIZE
 
-const FLASHLIGHT_RADIUS = 160
-const FLASHLIGHT_INNER_ANGLE = 20
-const FLASHLIGHT_OUTER_ANGLE = 90
+const FLASHLIGHT_RADIUS = 200
+const FLASHLIGHT_INNER_ANGLE = 30
+const FLASHLIGHT_OUTER_ANGLE = 100
 const FLASHLIGHT_COLOR = 0xffe6b3
-const FLASHLIGHT_INTENSITY = 1.8
+const FLASHLIGHT_INTENSITY = 2.4
 
 const AMBIENT_LIGHT_COLOR = 0x08060c
 
@@ -309,7 +309,7 @@ export class GameScene extends Phaser.Scene {
   private configureCamera(): void {
     const camera = this.cameras.main
 
-    camera.setZoom(5)
+    camera.setZoom(4)
 
     camera.startFollow(this.player, true, 1, 1)
   }
