@@ -82,6 +82,7 @@ export class GameScene extends Phaser.Scene {
   update(): void {
     this.updatePlayerMovement()
     this.updateFlashlightPosition()
+    this.updateFlashlightDirection()
     this.updateVisibilityMask()
   }
 
@@ -339,11 +340,37 @@ export class GameScene extends Phaser.Scene {
 
     if (movementDirection.lengthSq() > 0) {
       movementDirection.normalize()
-      this.flashlight.setConeRotation(movementDirection.angle())
       movementDirection.scale(PLAYER_SPEED)
     }
 
     this.player.setVelocity(movementDirection.x, movementDirection.y)
+  }
+
+  private updateFlashlightDirection(): void {
+    const pointer = this.input.activePointer
+    const camera = this.cameras.main
+
+    pointer.updateWorldPoint(camera)
+
+    const distance = Phaser.Math.Distance.Between(
+      this.player.x,
+      this.player.y,
+      pointer.worldX,
+      pointer.worldY,
+    )
+
+    if (distance < 4) {
+      return
+    }
+
+    const direction = Phaser.Math.Angle.Between(
+      this.player.x,
+      this.player.y,
+      pointer.worldX,
+      pointer.worldY,
+    )
+
+    this.flashlight.setConeRotation(direction)
   }
 
   private handlePlayerFoundExit(): void {
