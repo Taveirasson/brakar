@@ -5,9 +5,12 @@ import {
   type FarthestCellResult,
 } from '../maze/MazePathFinder'
 import { SCENE_KEYS } from '../config/sceneKeys'
+import type { GamePhase } from '../config'
+import { findItemCellsByQuadrant } from '../maze/MazeItemPlacement'
+import type { NotificationScene } from './NotificationScene'
 
-const MAZE_ROWS = 18
-const MAZE_COLUMNS = 25
+const MAZE_ROWS = 10
+const MAZE_COLUMNS = 10
 
 const CELL_SIZE = 64
 const WALL_THICKNESS = 5
@@ -50,15 +53,21 @@ type MovementKeys = {
 type WalllSegment = Phaser.Geom.Line
 
 export class GameScene extends Phaser.Scene {
+  private gamePhase: GamePhase = 'litExploration'
+
+  private collectedItems = 0
+  private readonly requiredItems = 3
+
   private maze!: MazeCell[][]
   private walls!: Phaser.Physics.Arcade.StaticGroup
 
   private wallSegments: WalllSegment[] = []
-  private visibillityMask!: Phaser.GameObjects.Graphics
+  private visibilityMask?: Phaser.GameObjects.Graphics
+  private visibilityMaskCreated = false
 
   private player!: Phaser.Physics.Arcade.Sprite
   private exit!: Phaser.Physics.Arcade.Image
-  private flashlight!: Phaser.GameObjects.Light
+  private flashlight?: Phaser.GameObjects.Light
 
   private cursorKeys!: Phaser.Types.Input.Keyboard.CursorKeys
   private wasdKeys!: MovementKeys
@@ -79,27 +88,37 @@ export class GameScene extends Phaser.Scene {
   create(): void {
     this.playerFoundExit = false
 
+    this.gamePhase = 'litExploration'
+    this.collectedItems = 0
+    this.visibilityMaskCreated = false
+
+    this.flashlight = undefined
+    this.visibilityMask = undefined
+    this.visibilityMaskCreated = false
+
     this.configureLighting()
     this.generateMaze()
     this.createWorld()
     this.createMazeWalls()
     this.createExit()
     this.createPlayer()
-    this.createFlashlight()
     this.createKeyboardControls()
     this.configureCollisions()
     this.configureCamera()
-    this.createVisibilityMask()
-    this.updateVisibilityMask()
     this.createMinimap()
     this.configurePauseControl()
+    this.startNotificationScene()
   }
 
   update(): void {
     this.updatePlayerMovement()
-    this.updateFlashlightPosition()
-    this.updateFlashlightDirection()
-    this.updateVisibilityMask()
+
+    if (this.visibilityMaskCreated) {
+      this.updateFlashlightPosition()
+      this.updateFlashlightDirection()
+      this.updateVisibilityMask()
+    }
+
     this.updateVisitedMap()
   }
 
@@ -519,6 +538,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   private updateFlashlightDirection(): void {
+    if (!this.flashlight) {
+      return
+    }
+
     const pointer = this.input.activePointer
     const camera = this.cameras.main
 
@@ -546,15 +569,42 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handlePlayerFoundExit(): void {
-    if (this.playerFoundExit) {
+    if (this.gamePhase === 'litExploration') {
+      this.showLockedExitMessage()
       return
     }
 
+    if (this.gamePhase === 'returningToExit') {
+      this.finishGame()
+    }
+
+    if (this.playerFoundExit) {
+      return
+    }
+  }
+
+  private showLockedExitMessage(): void {
+    if (this.gamePhase !== 'litExploration') {
+      return
+    }
+
+    this.gamePhase = 'lockMessage'
+    this.player.setVelocity(0, 0)
+
+    this.scene.pause()
+    this.scene.run(SCENE_KEYS.lockedExit)
+  }
+
+  private finishGame(): void {
+    if (this.gamePhase === 'victory') {
+      return
+    }
+
+    this.gamePhase = 'victory'
     this.playerFoundExit = true
     this.player.setVelocity(0, 0)
 
     this.physics.pause()
-
     this.cameras.main.flash(250, 244, 211, 94)
 
     this.time.delayedCall(300, () => {
@@ -606,10 +656,13 @@ export class GameScene extends Phaser.Scene {
 
   private configureLighting(): void {
     this.lights.enable()
-    this.lights.setAmbientColor(AMBIENT_LIGHT_COLOR)
+    this.lights.setAmbientColor(0xffffff)
   }
 
   private updateFlashlightPosition(): void {
+    if (!this.flashlight) {
+      return
+    }
     this.flashlight.x = this.player.x
     this.flashlight.y = this.player.y
   }
@@ -659,12 +712,12 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createVisibilityMask(): void {
-    this.visibillityMask = this.make.graphics({ x: 0, y: 0 })
+    this.visibilityMask = this.make.graphics({ x: 0, y: 0 })
 
     const camera = this.cameras.main
 
     const maskFilter = camera.filters.internal.addMask(
-      this.visibillityMask,
+      this.visibilityMask,
       false,
       camera,
       'world',
@@ -674,6 +727,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   private updateVisibilityMask(): void {
+    if (!this.visibilityMask || !this.flashlight) {
+      return
+    }
+
     const points: Phaser.Math.Vector2[] = [
       new Phaser.Math.Vector2(this.player.x, this.player.y),
     ]
@@ -692,16 +749,179 @@ export class GameScene extends Phaser.Scene {
       points.push(this.castVisibilityRay(rayAngle))
     }
 
-    this.visibillityMask.clear()
-    this.visibillityMask.fillStyle(0xffffff, 1)
+    this.visibilityMask.clear()
+    this.visibilityMask.fillStyle(0xffffff, 1)
 
-    this.visibillityMask.fillPoints(points, true)
+    this.visibilityMask.fillPoints(points, true)
 
-    // this.visibillityMask.fillStyle(0xffffff, 0.5)
-    this.visibillityMask.fillCircle(
+    // this.visibilityMask.fillStyle(0xffffff, 0.5)
+    this.visibilityMask.fillCircle(
       this.player.x,
       this.player.y,
       PLAYER_SIZE * 0.7,
     )
+  }
+
+  public beginItemSearch(): void {
+    if (this.gamePhase !== 'lockMessage') {
+      return
+    }
+
+    this.gamePhase = 'searchingItems'
+    this.collectedItems = 0
+
+    this.turnFlashlightOn()
+    this.turnOffWorldLights()
+    this.resetMinimap()
+    this.spawnRequiredItems()
+  }
+
+  private turnFlashlightOn(): void {
+    if (!this.flashlight) {
+      this.createFlashlight()
+    }
+
+    this.updateFlashlightDirection()
+    this.updateFlashlightPosition()
+  }
+
+  private turnOffWorldLights(): void {
+    this.lights.setAmbientColor(AMBIENT_LIGHT_COLOR)
+
+    if (!this.visibilityMaskCreated) {
+      this.createVisibilityMask()
+      this.visibilityMaskCreated = true
+    }
+
+    this.updateVisibilityMask()
+
+    this.cameras.main.flash(300, 255, 255, 255)
+  }
+
+  private resetMinimap(): void {
+    this.visitedCells.clear()
+    this.currentMapCellKey = ''
+
+    const currentCell = this.getPlayerCell()
+
+    this.visitedCells.add(`${currentCell.row},${currentCell.column}`)
+
+    this.currentMapCellKey = `${currentCell.row},${currentCell.column}`
+
+    this.drawMinimap(currentCell)
+  }
+
+  private spawnRequiredItems(): void {
+    this.createSquareTexture('lock-item', 12, 0x55ff88)
+
+    const itemCells: MazeCell[] = findItemCellsByQuadrant(
+      this.maze,
+      this.exitInformation.cell,
+    )
+
+    for (const cell of itemCells) {
+      const position = this.getCellCenter(cell.row, cell.column)
+
+      const item = this.physics.add.staticImage(
+        position.x,
+        position.y,
+        'lock-item',
+      )
+
+      item.setLighting(true)
+      item.setDepth(6)
+
+      this.physics.add.overlap(this.player, item, () => {
+        this.collectItem(item)
+      })
+    }
+  }
+
+  private collectItem(item: Phaser.Physics.Arcade.Image): void {
+    if (this.gamePhase !== 'searchingItems') {
+      return
+    }
+
+    if (!item.active) {
+      return
+    }
+
+    item.destroy()
+    this.collectedItems++
+
+    if (this.collectedItems >= this.requiredItems) {
+      this.unlockExit()
+      return
+    }
+
+    this.showCollectedItemMessage()
+  }
+
+  private showCollectedItemMessage(): void {
+    this.showNotification(
+      `FRAGMENTO ${this.collectedItems}/${this.requiredItems}`,
+      '#55ff88',
+      1000,
+    )
+  }
+
+  private unlockExit(): void {
+    this.gamePhase = 'returningToExit'
+
+    this.exit.setTint(0x55ff88)
+
+    this.cameras.main.flash(250, 85, 255, 136)
+
+    this.showNotification('A SAÍDA FOI DESTRANCADA', '#f4d35e', 2200)
+  }
+
+  private startNotificationScene(): void {
+    const notificationKey = SCENE_KEYS.notifications
+
+    if (!this.scene.isActive(notificationKey)) {
+      this.scene.launch(notificationKey)
+      return
+    }
+
+    const notificationScene = this.scene.get(
+      notificationKey,
+    ) as NotificationScene
+
+    notificationScene.clear()
+    this.scene.bringToTop(notificationKey)
+  }
+
+  private showNotification(
+    message: string,
+    color: string,
+    duration = 1600,
+  ): void {
+    const notificationKey = SCENE_KEYS.notifications
+
+    const notificationScene = this.scene.get(
+      notificationKey,
+    ) as NotificationScene
+
+    if (this.scene.isActive(notificationKey)) {
+      this.scene.bringToTop(notificationKey)
+
+      notificationScene.show(message, {
+        color,
+        duration,
+      })
+
+      return
+    }
+
+    notificationScene.events.once(Phaser.Scenes.Events.CREATE, () => {
+      this.scene.bringToTop(notificationKey)
+
+      notificationScene.show(message, {
+        color,
+        duration,
+      })
+    })
+
+    this.scene.launch(notificationKey)
   }
 }

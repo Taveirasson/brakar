@@ -4,6 +4,8 @@ import { GameScene } from './scenes/GameScene'
 import { MenuScene } from './scenes/MenuScene'
 import { PauseScene } from './scenes/PauseScene'
 import { VictoryScene } from './scenes/VictoryScene'
+import { LockedExitScene } from './scenes/LockedExitScene'
+import { NotificationScene } from './scenes/NotificationScene'
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.WEBGL,
@@ -32,7 +34,14 @@ const config: Phaser.Types.Core.GameConfig = {
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
 
-  scene: [MenuScene, GameScene, PauseScene, VictoryScene],
+  scene: [
+    MenuScene,
+    GameScene,
+    PauseScene,
+    LockedExitScene,
+    NotificationScene,
+    VictoryScene,
+  ],
 }
 
 new Phaser.Game(config)
