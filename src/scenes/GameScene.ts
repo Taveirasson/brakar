@@ -30,7 +30,10 @@ const FLASHLIGHT_OUTER_ANGLE = 100
 const FLASHLIGHT_COLOR = 0xffe6b3
 const FLASHLIGHT_INTENSITY = 2.4
 
-const AMBIENT_LIGHT_COLOR = 0x08060c
+const AMBIENT_LIGHT_COLOR = 0x40334f
+
+const DARK_VISIBILITY_ALPHA = 0.45
+const PLAYER_DARK_VISION_RADIUS = 28
 
 const FLASHLIGHT_RAY_COUNT = 181
 
@@ -69,6 +72,9 @@ export class GameScene extends Phaser.Scene {
   private exit!: Phaser.Physics.Arcade.Image
   private flashlight?: Phaser.GameObjects.Light
 
+  private flashlightEnabled = false
+  private flashlightToggleKey!: Phaser.Input.Keyboard.Key
+
   private cursorKeys!: Phaser.Types.Input.Keyboard.CursorKeys
   private wasdKeys!: MovementKeys
 
@@ -93,6 +99,7 @@ export class GameScene extends Phaser.Scene {
     this.visibilityMaskCreated = false
 
     this.flashlight = undefined
+    this.flashlightEnabled = false
     this.visibilityMask = undefined
     this.visibilityMaskCreated = false
 
@@ -112,6 +119,10 @@ export class GameScene extends Phaser.Scene {
 
   update(): void {
     this.updatePlayerMovement()
+
+    if (Phaser.Input.Keyboard.JustDown(this.flashlightToggleKey)) {
+      this.toggleFlashlight()
+    }
 
     if (this.visibilityMaskCreated) {
       this.updateFlashlightPosition()
@@ -487,6 +498,10 @@ export class GameScene extends Phaser.Scene {
       left: Phaser.Input.Keyboard.KeyCodes.A,
       right: Phaser.Input.Keyboard.KeyCodes.D,
     }) as MovementKeys
+
+    this.flashlightToggleKey = this.input.keyboard.addKey(
+      Phaser.Input.Keyboard.KeyCodes.F,
+    )
   }
 
   private configureCollisions(): void {
@@ -727,7 +742,28 @@ export class GameScene extends Phaser.Scene {
   }
 
   private updateVisibilityMask(): void {
-    if (!this.visibilityMask || !this.flashlight) {
+    const visibilityMask = this.visibilityMask
+    const flashlight = this.flashlight
+
+    if (!visibilityMask || !flashlight) {
+      return
+    }
+
+    visibilityMask.clear()
+
+    visibilityMask.fillStyle(0xffffff, DARK_VISIBILITY_ALPHA)
+
+    visibilityMask.fillRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT)
+
+    visibilityMask.fillStyle(0xffffff, 0.65)
+
+    visibilityMask.fillCircle(
+      this.player.x,
+      this.player.y,
+      PLAYER_DARK_VISION_RADIUS,
+    )
+
+    if (!this.flashlightEnabled) {
       return
     }
 
@@ -735,31 +771,26 @@ export class GameScene extends Phaser.Scene {
       new Phaser.Math.Vector2(this.player.x, this.player.y),
     ]
 
-    const flashlightDirection = this.flashlight.coneRotation
+    const flashlightDirection = flashlight.coneRotation
 
     const halfOuterAngle = Phaser.Math.DegToRad(FLASHLIGHT_OUTER_ANGLE / 2)
 
     const firstRayAngle = flashlightDirection - halfOuterAngle
+
     const totalAngle = halfOuterAngle * 2
 
     for (let index = 0; index < FLASHLIGHT_RAY_COUNT; index++) {
       const progress = index / (FLASHLIGHT_RAY_COUNT - 1)
+
       const rayAngle = firstRayAngle + totalAngle * progress
 
       points.push(this.castVisibilityRay(rayAngle))
     }
 
-    this.visibilityMask.clear()
-    this.visibilityMask.fillStyle(0xffffff, 1)
+    visibilityMask.fillStyle(0xffffff, 1)
+    visibilityMask.fillPoints(points, true)
 
-    this.visibilityMask.fillPoints(points, true)
-
-    // this.visibilityMask.fillStyle(0xffffff, 0.5)
-    this.visibilityMask.fillCircle(
-      this.player.x,
-      this.player.y,
-      PLAYER_SIZE * 0.7,
-    )
+    visibilityMask.fillCircle(this.player.x, this.player.y, PLAYER_SIZE * 0.7)
   }
 
   public beginItemSearch(): void {
@@ -781,8 +812,33 @@ export class GameScene extends Phaser.Scene {
       this.createFlashlight()
     }
 
+    this.flashlightEnabled = true
+
+    this.flashlight?.setIntensity(FLASHLIGHT_INTENSITY)
+
     this.updateFlashlightDirection()
     this.updateFlashlightPosition()
+  }
+
+  private toggleFlashlight(): void {
+    if (!this.flashlight) {
+      return
+    }
+
+    if (
+      this.gamePhase !== 'searchingItems' &&
+      this.gamePhase !== 'returningToExit'
+    ) {
+      return
+    }
+
+    this.flashlightEnabled = !this.flashlightEnabled
+
+    const intensity = this.flashlightEnabled ? FLASHLIGHT_INTENSITY : 0
+
+    this.flashlight.setIntensity(intensity)
+
+    this.updateVisibilityMask()
   }
 
   private turnOffWorldLights(): void {
