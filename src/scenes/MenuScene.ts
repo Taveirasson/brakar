@@ -36,9 +36,24 @@ export class MenuScene extends Phaser.Scene {
         this.startGame()
       },
     })
+
+    createTextButton({
+      scene: this,
+      x: centerX,
+      y: centerY + 50,
+      label: 'Configurações',
+      onClick: () => {
+        this.openConfigScene()
+      },
+    })
   }
 
   private startGame(): void {
     this.scene.start(SCENE_KEYS.game)
+  }
+
+  private openConfigScene(): void {
+    this.scene.stop(SCENE_KEYS.menu)
+    this.scene.start(SCENE_KEYS.configuration)
   }
 }

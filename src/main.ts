@@ -6,6 +6,7 @@ import { PauseScene } from './scenes/PauseScene'
 import { VictoryScene } from './scenes/VictoryScene'
 import { LockedExitScene } from './scenes/LockedExitScene'
 import { NotificationScene } from './scenes/NotificationScene'
+import { ConfigurationScene } from './scenes/ConfigurationScene'
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.WEBGL,
@@ -41,7 +42,12 @@ const config: Phaser.Types.Core.GameConfig = {
     LockedExitScene,
     NotificationScene,
     VictoryScene,
+    ConfigurationScene,
   ],
+
+  dom: {
+    createContainer: true,
+  },
 }
 
 new Phaser.Game(config)

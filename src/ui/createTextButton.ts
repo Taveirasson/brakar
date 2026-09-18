@@ -5,6 +5,8 @@ export type CreateButtonProps = {
   x: number
   y: number
   label: string
+  color?: string
+  backgrondColor?: string
   onClick: () => void
 }
 
@@ -13,14 +15,16 @@ export function createTextButton({
   x,
   y,
   label,
+  color = '#ffffff',
+  backgrondColor = '#5a4473',
   onClick,
 }: CreateButtonProps): Phaser.GameObjects.Text {
   const button = scene.add
     .text(x, y, label, {
       fontFamily: 'monospace',
       fontSize: '24px',
-      color: '#ffffff',
-      backgroundColor: '#5a4473',
+      color: color,
+      backgroundColor: backgrondColor,
       padding: {
         x: 20,
         y: 10,

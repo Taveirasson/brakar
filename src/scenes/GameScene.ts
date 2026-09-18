@@ -8,9 +8,7 @@ import { SCENE_KEYS } from '../config/sceneKeys'
 import type { GamePhase } from '../config'
 import { findItemCellsByQuadrant } from '../maze/MazeItemPlacement'
 import type { NotificationScene } from './NotificationScene'
-
-const MAZE_ROWS = 10
-const MAZE_COLUMNS = 10
+import { getSavedMazeSize } from '../config/mazeSettings'
 
 const CELL_SIZE = 64
 const WALL_THICKNESS = 5
@@ -20,9 +18,6 @@ const PLAYER_SPEED = 110
 const PLAYER_COLOR = 0x9b5de5
 
 const EXIT_SIZE = 18
-
-const WORLD_WIDTH = MAZE_COLUMNS * CELL_SIZE
-const WORLD_HEIGHT = MAZE_ROWS * CELL_SIZE
 
 const FLASHLIGHT_RADIUS = 200
 const FLASHLIGHT_INNER_ANGLE = 30
@@ -61,6 +56,9 @@ export class GameScene extends Phaser.Scene {
   private collectedItems = 0
   private readonly requiredItems = 3
 
+  private mazeSize = 10
+  private WORLD_WIDTH = this.mazeSize * CELL_SIZE
+  private WORLD_HEIGHT = this.mazeSize * CELL_SIZE
   private maze!: MazeCell[][]
   private walls!: Phaser.Physics.Arcade.StaticGroup
 
@@ -92,6 +90,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.mazeSize = getSavedMazeSize()
     this.playerFoundExit = false
 
     this.gamePhase = 'litExploration'
@@ -134,7 +133,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private generateMaze(): void {
-    const generator = new MazeGenerator(MAZE_ROWS, MAZE_COLUMNS)
+    const generator = new MazeGenerator(this.mazeSize, this.mazeSize)
 
     this.maze = generator.generate()
 
@@ -142,13 +141,13 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createWorld(): void {
-    this.physics.world.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT)
+    this.physics.world.setBounds(0, 0, this.WORLD_WIDTH, this.WORLD_HEIGHT)
 
     this.createSquareTexture('floor', CELL_SIZE, 0x171120)
 
     this.add
-      .image(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 'floor')
-      .setDisplaySize(WORLD_WIDTH, WORLD_HEIGHT)
+      .image(this.WORLD_WIDTH / 2, this.WORLD_HEIGHT / 2, 'floor')
+      .setDisplaySize(this.WORLD_WIDTH, this.WORLD_HEIGHT)
       .setLighting(true)
       .setDepth(-10)
 
@@ -160,8 +159,8 @@ export class GameScene extends Phaser.Scene {
 
     floorGraphics.fillStyle(0x20172c, 1)
 
-    for (let row = 0; row < MAZE_ROWS; row++) {
-      for (let column = 0; column < MAZE_COLUMNS; column++) {
+    for (let row = 0; row < this.mazeSize; row++) {
+      for (let column = 0; column < this.mazeSize; column++) {
         const shouldDrawTile = (row + column) % 2 === 0
 
         if (!shouldDrawTile) {
@@ -216,13 +215,13 @@ export class GameScene extends Phaser.Scene {
       this.createWall(leftX, centerY, WALL_THICKNESS, CELL_SIZE)
     }
 
-    const isLastColumn = cell.column === MAZE_COLUMNS - 1
+    const isLastColumn = cell.column === this.mazeSize - 1
 
     if (isLastColumn && cell.walls.right) {
       this.createWall(rightX, centerY, WALL_THICKNESS, CELL_SIZE)
     }
 
-    const isLastRow = cell.row === MAZE_ROWS - 1
+    const isLastRow = cell.row === this.mazeSize - 1
 
     if (isLastRow && cell.walls.bottom) {
       this.createWall(centerX, bottomY, CELL_SIZE, WALL_THICKNESS)
@@ -268,8 +267,8 @@ export class GameScene extends Phaser.Scene {
     this.visitedCells.clear()
     this.currentMapCellKey = ''
 
-    const minimapWidth = MAZE_COLUMNS * MINIMAP_CELL_SIZE
-    const minimapHeight = MAZE_ROWS * MINIMAP_CELL_SIZE
+    const minimapWidth = this.mazeSize * MINIMAP_CELL_SIZE
+    const minimapHeight = this.mazeSize * MINIMAP_CELL_SIZE
 
     const minimapX = this.scale.width - minimapWidth - MINIMAP_PADDING
 
@@ -306,13 +305,13 @@ export class GameScene extends Phaser.Scene {
     const row = Phaser.Math.Clamp(
       Math.floor(this.player.y / CELL_SIZE),
       0,
-      MAZE_ROWS - 1,
+      this.mazeSize - 1,
     )
 
     const column = Phaser.Math.Clamp(
       Math.floor(this.player.x / CELL_SIZE),
       0,
-      MAZE_COLUMNS - 1,
+      this.mazeSize - 1,
     )
 
     return this.maze[row][column]
@@ -362,9 +361,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   private drawMinimapBorder(): void {
-    const minimapWidth = MAZE_COLUMNS * MINIMAP_CELL_SIZE
+    const minimapWidth = this.mazeSize * MINIMAP_CELL_SIZE
 
-    const minimapHeight = MAZE_ROWS * MINIMAP_CELL_SIZE
+    const minimapHeight = this.mazeSize * MINIMAP_CELL_SIZE
 
     this.minimapGraphics.lineStyle(1, MINIMAP_WALL_COLOR, 1)
 
@@ -753,7 +752,7 @@ export class GameScene extends Phaser.Scene {
 
     visibilityMask.fillStyle(0xffffff, DARK_VISIBILITY_ALPHA)
 
-    visibilityMask.fillRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT)
+    visibilityMask.fillRect(0, 0, this.WORLD_WIDTH, this.WORLD_HEIGHT)
 
     visibilityMask.fillStyle(0xffffff, 0.65)
 

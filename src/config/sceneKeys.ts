@@ -5,4 +5,5 @@ export const SCENE_KEYS = {
   lockedExit: 'LockedExitScene',
   notifications: 'NotificationScene',
   victory: 'VictoryScene',
+  configuration: 'ConfigurationScene',
 } as const

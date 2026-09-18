@@ -20,3 +20,64 @@ body {
 canvas {
   display: block;
 }
+.maze-dropdown {
+  position: relative;
+  width: 260px;
+  font: 20px monospace;
+  color: #fff;
+}
+
+.maze-dropdown summary {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border: 2px solid #9b5de5;
+  border-radius: 8px;
+  background: #171120;
+  cursor: pointer;
+  list-style: none;
+}
+
+.maze-dropdown summary::-webkit-details-marker {
+  display: none;
+}
+
+.maze-dropdown summary::after {
+  content: "▾";
+  color: #f4d35e;
+}
+
+.maze-options {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px;
+  border: 2px solid #9b5de5;
+  border-radius: 8px;
+  background: #171120;
+  box-shadow: 0 12px 28px #0008;
+}
+
+.maze-options button {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.maze-options button:hover,
+.maze-options button:focus-visible {
+  background: #5a4473;
+}
+
+.maze-options button.is-selected {
+  color: #f4d35e;
+}
