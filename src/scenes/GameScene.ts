@@ -440,6 +440,7 @@ export class GameScene extends Phaser.Scene {
 
     this.player.setCollideWorldBounds(true)
     this.player.setDepth(10)
+    this.player.setDrag(500, 500)
   }
 
   private createExit(): void {
@@ -538,17 +539,17 @@ export class GameScene extends Phaser.Scene {
 
     const verticalDirection = Number(movingDown) - Number(movingUp)
 
-    const movementDirection = new Phaser.Math.Vector2(
-      horizontalDirection,
-      verticalDirection,
-    )
+    const isMovingDiagonally =
+      horizontalDirection !== 0 && verticalDirection !== 0
+    const speed = isMovingDiagonally ? PLAYER_SPEED / Math.SQRT2 : PLAYER_SPEED
 
-    if (movementDirection.lengthSq() > 0) {
-      movementDirection.normalize()
-      movementDirection.scale(PLAYER_SPEED)
+    if (horizontalDirection !== 0) {
+      this.player.setVelocityX(horizontalDirection * speed)
     }
 
-    this.player.setVelocity(movementDirection.x, movementDirection.y)
+    if (verticalDirection !== 0) {
+      this.player.setVelocityY(verticalDirection * speed)
+    }
   }
 
   private updateFlashlightDirection(): void {
