@@ -10,6 +10,13 @@ import { findItemCellsByQuadrant } from '../maze/MazeItemPlacement'
 import type { NotificationScene } from './NotificationScene'
 import { getSavedMazeSize } from '../config/mazeSettings'
 import { castRay } from '../vision/lineOfSight'
+import { Hunter } from '../hunter/Hunter'
+import { canPerceivePlayer } from '../hunter/hunterPerception'
+import {
+  DARK_PERCEPTION_CELLS,
+  DEFAULT_HUNTER_SETTINGS,
+  type HunterSettings,
+} from '../hunter/hunterSettings'
 
 const CELL_SIZE = 64
 const WALL_THICKNESS = 5
@@ -83,6 +90,9 @@ export class GameScene extends Phaser.Scene {
   private minimapCamera!: Phaser.Cameras.Scene2D.Camera
   private minimapGraphics!: Phaser.GameObjects.Graphics
 
+  private hunter?: Hunter
+  private readonly hunterSettings: HunterSettings = DEFAULT_HUNTER_SETTINGS
+
   private visitedCells = new Set<string>()
   private currentMapCellKey = ''
 
@@ -103,6 +113,8 @@ export class GameScene extends Phaser.Scene {
     this.visibilityMask = undefined
     this.visibilityMaskCreated = false
 
+    this.hunter = undefined
+
     this.configureLighting()
     this.generateMaze()
     this.createWorld()
@@ -117,8 +129,9 @@ export class GameScene extends Phaser.Scene {
     this.startNotificationScene()
   }
 
-  update(): void {
+  update(_time: number, delta: number): void {
     this.updatePlayerMovement()
+    this.updateHunter(delta)
 
     if (Phaser.Input.Keyboard.JustDown(this.flashlightToggleKey)) {
       this.toggleFlashlight()
@@ -773,6 +786,52 @@ export class GameScene extends Phaser.Scene {
     this.turnOffWorldLights()
     this.resetMinimap()
     this.spawnRequiredItems()
+    this.spawnHunter()
+  }
+
+  private spawnHunter(): void {
+    const playerCell = this.getPlayerCell()
+
+    const spawnCell = findFarthestCell(
+      this.maze,
+      playerCell.row,
+      playerCell.column,
+    ).cell
+
+    this.hunter = new Hunter(
+      this,
+      this.maze,
+      spawnCell,
+      this.hunterSettings,
+      CELL_SIZE,
+    )
+  }
+
+  private updateHunter(delta: number): void {
+    const hunter = this.hunter
+
+    if (!hunter) {
+      return
+    }
+
+    const hunterIsActive =
+      this.gamePhase === 'searchingItems' ||
+      this.gamePhase === 'returningToExit'
+
+    if (!hunterIsActive) {
+      return
+    }
+
+    const perceivesPlayer = canPerceivePlayer({
+      hunter: hunter.position,
+      player: { x: this.player.x, y: this.player.y },
+      flashlightOn: this.flashlightEnabled,
+      lightRadius: this.hunterSettings.lightPerceptionRadiusCells * CELL_SIZE,
+      darkRadius: DARK_PERCEPTION_CELLS * CELL_SIZE,
+      walls: this.wallSegments,
+    })
+
+    hunter.update(delta, this.getPlayerCell(), perceivesPlayer)
   }
 
   private turnFlashlightOn(): void {
