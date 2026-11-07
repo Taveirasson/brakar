@@ -68,9 +68,15 @@ export class Hunter {
     return this.brain.state
   }
 
+  /** O objeto de cena, para que outras câmeras (como o minimapa) possam ignorá-lo. */
+  get gameObject(): Phaser.GameObjects.Image {
+    return this.sprite
+  }
+
   update(
     deltaMs: number,
     playerCell: CellPosition,
+    playerPosition: Point,
     perceivesPlayer: boolean,
   ): void {
     this.brain.update({
@@ -82,29 +88,23 @@ export class Hunter {
 
     let remaining = (this.currentSpeed() * deltaMs) / 1000
 
+    if (this.brain.shouldChaseDirectly(this.currentCell, playerCell)) {
+      // Jogador na mesma célula: vai direto até ele. O caçador está sempre dentro
+      // da célula atual ou no corredor aberto para a próxima, então a linha reta
+      // até o jogador não atravessa paredes.
+      this.moveToward(playerPosition, remaining)
+      return
+    }
+
     // Anda de centro em centro; se sobrar movimento ao chegar, segue para a próxima célula.
     while (remaining > 0) {
       const target = this.cellCenter(this.targetCell)
-      const distance = Phaser.Math.Distance.Between(
-        this.sprite.x,
-        this.sprite.y,
-        target.x,
-        target.y,
-      )
+      const distance = this.moveToward(target, remaining)
 
       if (distance > remaining) {
-        const angle = Phaser.Math.Angle.Between(
-          this.sprite.x,
-          this.sprite.y,
-          target.x,
-          target.y,
-        )
-        this.sprite.x += Math.cos(angle) * remaining
-        this.sprite.y += Math.sin(angle) * remaining
         return
       }
 
-      this.sprite.setPosition(target.x, target.y)
       remaining -= distance
       this.currentCell = this.targetCell
       this.targetCell = this.brain.nextCell(this.currentCell)
@@ -121,6 +121,36 @@ export class Hunter {
 
   destroy(): void {
     this.sprite.destroy()
+  }
+
+  /**
+   * Anda até `maxDistance` em direção a `target`, sem passar dele.
+   * Retorna a distância que existia até o alvo antes de andar.
+   */
+  private moveToward(target: Point, maxDistance: number): number {
+    const distance = Phaser.Math.Distance.Between(
+      this.sprite.x,
+      this.sprite.y,
+      target.x,
+      target.y,
+    )
+
+    if (distance <= maxDistance) {
+      this.sprite.setPosition(target.x, target.y)
+      return distance
+    }
+
+    const angle = Phaser.Math.Angle.Between(
+      this.sprite.x,
+      this.sprite.y,
+      target.x,
+      target.y,
+    )
+
+    this.sprite.x += Math.cos(angle) * maxDistance
+    this.sprite.y += Math.sin(angle) * maxDistance
+
+    return distance
   }
 
   private currentSpeed(): number {

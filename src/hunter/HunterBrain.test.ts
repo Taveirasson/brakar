@@ -112,6 +112,24 @@ describe('HunterBrain', () => {
     })
   })
 
+  it('caçando na mesma célula do jogador vai direto até ele', () => {
+    const brain = new HunterBrain(SERPENTINE_MAZE)
+    reachHunting(brain, ORIGIN)
+    expect(brain.shouldChaseDirectly(ORIGIN, ORIGIN)).toBe(true)
+  })
+
+  it('caçando em outra célula segue pelos centros', () => {
+    const brain = new HunterBrain(SERPENTINE_MAZE)
+    reachHunting(brain, FAR_CORNER)
+    expect(brain.shouldChaseDirectly(ORIGIN, FAR_CORNER)).toBe(false)
+  })
+
+  it('investigando na mesma célula não vai direto', () => {
+    const brain = new HunterBrain(SERPENTINE_MAZE)
+    tick(brain, 16, true, ORIGIN, ORIGIN)
+    expect(brain.shouldChaseDirectly(ORIGIN, ORIGIN)).toBe(false)
+  })
+
   it('wandering não volta para trás', () => {
     const brain = new HunterBrain(SERPENTINE_MAZE, () => 0)
     expect(cell(brain.nextCell(ORIGIN))).toEqual({ row: 0, column: 1 })

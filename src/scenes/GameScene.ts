@@ -814,6 +814,9 @@ export class GameScene extends Phaser.Scene {
       this.hunterSettings,
       CELL_SIZE,
     )
+
+    // A câmera do minimapa só ignora o que já existia quando foi criada.
+    this.minimapCamera.ignore(this.hunter.gameObject)
   }
 
   private updateHunter(delta: number): void {
@@ -840,7 +843,12 @@ export class GameScene extends Phaser.Scene {
       walls: this.wallSegments,
     })
 
-    hunter.update(delta, this.getPlayerCell(), perceivesPlayer)
+    hunter.update(
+      delta,
+      this.getPlayerCell(),
+      { x: this.player.x, y: this.player.y },
+      perceivesPlayer,
+    )
 
     if (this.isPlayerCaught()) {
       this.catchPlayer()

@@ -90,6 +90,18 @@ export class HunterBrain {
     }
   }
 
+  /**
+   * Caçando e na mesma célula do jogador: o caçador deve ir até a posição
+   * real dele, e não parar no centro da célula (senão encostar na parede
+   * deixaria o jogador fora do alcance da captura).
+   */
+  shouldChaseDirectly(
+    hunterCell: CellPosition,
+    playerCell: CellPosition,
+  ): boolean {
+    return this.currentState === 'hunting' && sameCell(hunterCell, playerCell)
+  }
+
   nextCell(hunterCell: CellPosition): CellPosition {
     const cameFrom = this.previousCell
     this.previousCell = hunterCell
