@@ -9,6 +9,7 @@ import type { GamePhase } from '../config'
 import { findItemCellsByQuadrant } from '../maze/MazeItemPlacement'
 import type { NotificationScene } from './NotificationScene'
 import { getSavedMazeSize } from '../config/mazeSettings'
+import { castRay } from '../vision/lineOfSight'
 
 const CELL_SIZE = 64
 const WALL_THICKNESS = 5
@@ -683,47 +684,14 @@ export class GameScene extends Phaser.Scene {
   }
 
   private castVisibilityRay(angle: number): Phaser.Math.Vector2 {
-    const startX = this.player.x
-    const startY = this.player.y
+    const hit = castRay(
+      { x: this.player.x, y: this.player.y },
+      angle,
+      FLASHLIGHT_RADIUS,
+      this.wallSegments,
+    )
 
-    const endX = startX + Math.cos(angle) * FLASHLIGHT_RADIUS
-    const endY = startY + Math.sin(angle) * FLASHLIGHT_RADIUS
-
-    const ray = new Phaser.Geom.Line(startX, startY, endX, endY)
-
-    const closestPoint = new Phaser.Math.Vector2(endX, endY)
-
-    let closestDistanceSquared = FLASHLIGHT_RADIUS * FLASHLIGHT_RADIUS
-
-    const intersection = new Phaser.Math.Vector2()
-
-    for (const wallSegment of this.wallSegments) {
-      const rayHitWalll = Phaser.Geom.Intersects.LineToLine(
-        ray,
-        wallSegment,
-        intersection,
-      )
-
-      if (!rayHitWalll) {
-        continue
-      }
-
-      const distanceSquared = Phaser.Math.Distance.Squared(
-        startX,
-        startY,
-        intersection.x,
-        intersection.y,
-      )
-
-      if (distanceSquared >= closestDistanceSquared) {
-        continue
-      }
-
-      closestDistanceSquared = distanceSquared
-      closestPoint.copy(intersection)
-    }
-
-    return closestPoint
+    return new Phaser.Math.Vector2(hit.x, hit.y)
   }
 
   private createVisibilityMask(): void {
