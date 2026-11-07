@@ -11,10 +11,11 @@ import type { NotificationScene } from './NotificationScene'
 import { getSavedMazeSize } from '../config/mazeSettings'
 import { castRay } from '../vision/lineOfSight'
 import { Hunter } from '../hunter/Hunter'
-import { canPerceivePlayer } from '../hunter/hunterPerception'
+import { canPerceivePlayer, isCaught } from '../hunter/hunterPerception'
 import {
   DARK_PERCEPTION_CELLS,
   DEFAULT_HUNTER_SETTINGS,
+  HUNTER_SIZE,
   type HunterSettings,
 } from '../hunter/hunterSettings'
 
@@ -26,6 +27,9 @@ const PLAYER_SPEED = 110
 const PLAYER_COLOR = 0x9b5de5
 
 const EXIT_SIZE = 18
+
+const CATCH_DISTANCE = (PLAYER_SIZE + HUNTER_SIZE) / 2
+const CATCH_EFFECT_MS = 400
 
 const FLASHLIGHT_RADIUS = 200
 const FLASHLIGHT_INNER_ANGLE = 30
@@ -604,6 +608,11 @@ export class GameScene extends Phaser.Scene {
     }
 
     if (this.gamePhase === 'returningToExit') {
+      if (this.isPlayerCaught()) {
+        this.catchPlayer()
+        return
+      }
+
       this.finishGame()
     }
 
@@ -657,7 +666,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private pauseGame(): void {
-    if (this.playerFoundExit) {
+    if (this.playerFoundExit || this.gamePhase === 'defeat') {
       return
     }
 
@@ -832,6 +841,40 @@ export class GameScene extends Phaser.Scene {
     })
 
     hunter.update(delta, this.getPlayerCell(), perceivesPlayer)
+
+    if (this.isPlayerCaught()) {
+      this.catchPlayer()
+    }
+  }
+
+  private isPlayerCaught(): boolean {
+    if (!this.hunter) {
+      return false
+    }
+
+    return isCaught(
+      this.hunter.position,
+      { x: this.player.x, y: this.player.y },
+      CATCH_DISTANCE,
+    )
+  }
+
+  private catchPlayer(): void {
+    if (this.gamePhase === 'defeat' || this.gamePhase === 'victory') {
+      return
+    }
+
+    this.gamePhase = 'defeat'
+    this.player.setVelocity(0, 0)
+
+    this.physics.pause()
+    this.cameras.main.shake(CATCH_EFFECT_MS, 0.01)
+    this.cameras.main.flash(CATCH_EFFECT_MS, 180, 20, 30)
+
+    this.time.delayedCall(CATCH_EFFECT_MS, () => {
+      this.scene.pause()
+      this.scene.run(SCENE_KEYS.gameOver, { night: 1 })
+    })
   }
 
   private turnFlashlightOn(): void {

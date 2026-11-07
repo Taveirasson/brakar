@@ -4,3 +4,4 @@ export type GamePhase =
   | 'searchingItems'
   | 'returningToExit'
   | 'victory'
+  | 'defeat'
