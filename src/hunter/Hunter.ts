@@ -2,6 +2,7 @@ import Phaser from 'phaser'
 import type { MazeCell } from '../maze/MazeGenerator'
 import type { CellPosition } from '../maze/MazePathFinder'
 import type { Point } from '../vision/lineOfSight'
+import { cellCenter } from '../maze/MazeLayout'
 import { HunterBrain, type HunterState } from './HunterBrain'
 import { HUNTER_SIZE, type HunterSettings } from './hunterSettings'
 
@@ -44,14 +45,13 @@ export class Hunter {
     maze: MazeCell[][],
     startCell: CellPosition,
     private readonly settings: HunterSettings,
-    private readonly cellSize: number,
   ) {
     createHunterTexture(scene)
 
     this.brain = new HunterBrain(maze)
     this.currentCell = startCell
 
-    const start = this.cellCenter(startCell)
+    const start = cellCenter(startCell)
 
     this.sprite = scene.add.image(start.x, start.y, HUNTER_TEXTURE)
     this.sprite.setLighting(true)
@@ -98,7 +98,7 @@ export class Hunter {
 
     // Anda de centro em centro; se sobrar movimento ao chegar, segue para a próxima célula.
     while (remaining > 0) {
-      const target = this.cellCenter(this.targetCell)
+      const target = cellCenter(this.targetCell)
       const distance = this.moveToward(target, remaining)
 
       if (distance > remaining) {
@@ -161,13 +161,6 @@ export class Hunter {
         return this.settings.investigateSpeed
       case 'hunting':
         return this.settings.huntSpeed
-    }
-  }
-
-  private cellCenter(cell: CellPosition): Point {
-    return {
-      x: cell.column * this.cellSize + this.cellSize / 2,
-      y: cell.row * this.cellSize + this.cellSize / 2,
     }
   }
 }

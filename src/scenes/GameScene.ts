@@ -4,12 +4,28 @@ import {
   findFarthestCell,
   type FarthestCellResult,
 } from '../maze/MazePathFinder'
+import {
+  CELL_PITCH,
+  MOVEMENT_SCALE,
+  TILE_SIZE,
+  buildTileGrid,
+  cellAt,
+  cellCenter,
+  wallSegmentsFromGrid,
+  worldSize,
+} from '../maze/MazeLayout'
+import {
+  FALLBACK_FRAME_COLORS,
+  FOREST_FRAME_COUNT,
+  FOREST_TEXTURE,
+  tileFrameFor,
+} from '../maze/forestTileset'
 import { SCENE_KEYS } from '../config/sceneKeys'
 import type { GamePhase } from '../config'
 import { findItemCellsByQuadrant } from '../maze/MazeItemPlacement'
 import type { NotificationScene } from './NotificationScene'
 import { getSavedMazeSize } from '../config/mazeSettings'
-import { castRay } from '../vision/lineOfSight'
+import { castRay, type Segment } from '../vision/lineOfSight'
 import { Hunter } from '../hunter/Hunter'
 import { canPerceivePlayer, isCaught } from '../hunter/hunterPerception'
 import {
@@ -19,11 +35,8 @@ import {
   type HunterSettings,
 } from '../hunter/hunterSettings'
 
-const CELL_SIZE = 64
-const WALL_THICKNESS = 5
-
 const PLAYER_SIZE = 16
-const PLAYER_SPEED = 110
+const PLAYER_SPEED = 110 * MOVEMENT_SCALE
 const PLAYER_COLOR = 0x9b5de5
 
 const EXIT_SIZE = 18
@@ -31,7 +44,7 @@ const EXIT_SIZE = 18
 const CATCH_DISTANCE = (PLAYER_SIZE + HUNTER_SIZE) / 2
 const CATCH_EFFECT_MS = 400
 
-const FLASHLIGHT_RADIUS = 200
+const FLASHLIGHT_RADIUS = 200 * MOVEMENT_SCALE
 const FLASHLIGHT_INNER_ANGLE = 30
 const FLASHLIGHT_OUTER_ANGLE = 100
 const FLASHLIGHT_COLOR = 0xffe6b3
@@ -47,9 +60,9 @@ const FLASHLIGHT_RAY_COUNT = 181
 const MINIMAP_CELL_SIZE = 8
 const MINIMAP_PADDING = 12
 
-const MINIMAP_BACKGROUND_COLOR = 0x09070f
-const MINIMAP_FLOOR_COLOR = 0x79608f
-const MINIMAP_WALL_COLOR = 0xc1aecf
+const MINIMAP_BACKGROUND_COLOR = 0x08110b
+const MINIMAP_FLOOR_COLOR = 0x5a4630
+const MINIMAP_WALL_COLOR = 0x6fae6a
 const MINIMAP_PLAYER_COLOR = 0xf4d35e
 const MINIMAP_EXIT_COLOR = 0x55ff88
 
@@ -60,8 +73,6 @@ type MovementKeys = {
   right: Phaser.Input.Keyboard.Key
 }
 
-type WalllSegment = Phaser.Geom.Line
-
 export class GameScene extends Phaser.Scene {
   private gamePhase: GamePhase = 'litExploration'
 
@@ -69,12 +80,11 @@ export class GameScene extends Phaser.Scene {
   private readonly requiredItems = 3
 
   private mazeSize = 10
-  private WORLD_WIDTH = this.mazeSize * CELL_SIZE
-  private WORLD_HEIGHT = this.mazeSize * CELL_SIZE
+  private worldPixels = 0
   private maze!: MazeCell[][]
-  private walls!: Phaser.Physics.Arcade.StaticGroup
+  private trees!: Phaser.Tilemaps.TilemapLayer
 
-  private wallSegments: WalllSegment[] = []
+  private wallSegments: Segment[] = []
   private visibilityMask?: Phaser.GameObjects.Graphics
   private visibilityMaskCreated = false
 
@@ -104,8 +114,16 @@ export class GameScene extends Phaser.Scene {
     super(SCENE_KEYS.game)
   }
 
+  preload(): void {
+    this.load.spritesheet(FOREST_TEXTURE, 'assets/tiles/forest.png', {
+      frameWidth: TILE_SIZE,
+      frameHeight: TILE_SIZE,
+    })
+  }
+
   create(): void {
     this.mazeSize = getSavedMazeSize()
+    this.worldPixels = worldSize(this.mazeSize)
     this.playerFoundExit = false
 
     this.gamePhase = 'litExploration'
@@ -121,8 +139,7 @@ export class GameScene extends Phaser.Scene {
 
     this.configureLighting()
     this.generateMaze()
-    this.createWorld()
-    this.createMazeWalls()
+    this.createForest()
     this.createExit()
     this.createPlayer()
     this.createKeyboardControls()
@@ -158,127 +175,87 @@ export class GameScene extends Phaser.Scene {
     this.exitInformation = findFarthestCell(this.maze, 0, 0)
   }
 
-  private createWorld(): void {
-    this.physics.world.setBounds(0, 0, this.WORLD_WIDTH, this.WORLD_HEIGHT)
-
-    this.createSquareTexture('floor', CELL_SIZE, 0x171120)
-
-    this.add
-      .image(this.WORLD_WIDTH / 2, this.WORLD_HEIGHT / 2, 'floor')
-      .setDisplaySize(this.WORLD_WIDTH, this.WORLD_HEIGHT)
-      .setLighting(true)
-      .setDepth(-10)
-
-    this.drawFloorDetails()
-  }
-
-  private drawFloorDetails(): void {
-    const floorGraphics = this.add.graphics()
-
-    floorGraphics.fillStyle(0x20172c, 1)
-
-    for (let row = 0; row < this.mazeSize; row++) {
-      for (let column = 0; column < this.mazeSize; column++) {
-        const shouldDrawTile = (row + column) % 2 === 0
-
-        if (!shouldDrawTile) {
-          continue
-        }
-
-        floorGraphics.fillRect(
-          column * CELL_SIZE,
-          row * CELL_SIZE,
-          CELL_SIZE,
-          CELL_SIZE,
-        )
-      }
-    }
-
-    floorGraphics.setLighting(true)
-    floorGraphics.setDepth(-9)
-  }
-
-  private createMazeWalls(): void {
-    this.wallSegments = []
-
-    this.createSquareTexture('wall', WALL_THICKNESS, 0x5a4473)
-
-    this.walls = this.physics.add.staticGroup()
-
-    for (const row of this.maze) {
-      for (const cell of row) {
-        this.createCellWalls(cell)
-      }
-    }
-  }
-
-  private createCellWalls(cell: MazeCell): void {
-    const centerX = cell.column * CELL_SIZE + CELL_SIZE / 2
-
-    const centerY = cell.row * CELL_SIZE + CELL_SIZE / 2
-
-    const leftX = cell.column * CELL_SIZE
-
-    const rightX = (cell.column + 1) * CELL_SIZE
-
-    const topY = cell.row * CELL_SIZE
-
-    const bottomY = (cell.row + 1) * CELL_SIZE
-
-    if (cell.walls.top) {
-      this.createWall(centerX, topY, CELL_SIZE, WALL_THICKNESS)
-    }
-
-    if (cell.walls.left) {
-      this.createWall(leftX, centerY, WALL_THICKNESS, CELL_SIZE)
-    }
-
-    const isLastColumn = cell.column === this.mazeSize - 1
-
-    if (isLastColumn && cell.walls.right) {
-      this.createWall(rightX, centerY, WALL_THICKNESS, CELL_SIZE)
-    }
-
-    const isLastRow = cell.row === this.mazeSize - 1
-
-    if (isLastRow && cell.walls.bottom) {
-      this.createWall(centerX, bottomY, CELL_SIZE, WALL_THICKNESS)
-    }
-  }
-
-  private createWall(
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-  ): void {
-    const wall = this.walls.create(x, y, 'wall') as Phaser.Physics.Arcade.Image
-
-    wall.setDisplaySize(width, height)
-    wall.setLighting(true)
-    wall.refreshBody()
-
-    this.createWallsSegment(x, y, width, height)
-  }
-
-  private createWallsSegment(
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-  ): void {
-    const wallsIsHorizontal = width > height
-
-    if (wallsIsHorizontal) {
-      this.wallSegments.push(
-        new Phaser.Geom.Line(x - width / 2, y, x + width / 2, y),
-      )
+  private ensureForestTexture(): void {
+    if (this.textures.exists(FOREST_TEXTURE)) {
       return
     }
 
-    this.wallSegments.push(
-      new Phaser.Geom.Line(x, y - height / 2, x, y + height / 2),
+    // Falha ao carregar o tileset: pinta cada frame com uma cor sólida.
+    const graphics = this.make.graphics({ x: 0, y: 0 })
+
+    FALLBACK_FRAME_COLORS.forEach((color, index) => {
+      graphics.fillStyle(color, 1)
+      graphics.fillRect(index * TILE_SIZE, 0, TILE_SIZE, TILE_SIZE)
+    })
+
+    graphics.generateTexture(
+      FOREST_TEXTURE,
+      FOREST_FRAME_COUNT * TILE_SIZE,
+      TILE_SIZE,
     )
+    graphics.destroy()
+
+    const texture = this.textures.get(FOREST_TEXTURE)
+
+    for (let index = 0; index < FOREST_FRAME_COUNT; index++) {
+      texture.add(index, 0, index * TILE_SIZE, 0, TILE_SIZE, TILE_SIZE)
+    }
+  }
+
+  private createForest(): void {
+    this.physics.world.setBounds(0, 0, this.worldPixels, this.worldPixels)
+
+    this.ensureForestTexture()
+
+    const grid = buildTileGrid(this.maze)
+    const size = grid.length
+    const exitCell = this.exitInformation.cell
+
+    const map = this.make.tilemap({
+      tileWidth: TILE_SIZE,
+      tileHeight: TILE_SIZE,
+      width: size,
+      height: size,
+    })
+    const tileset = map.addTilesetImage(FOREST_TEXTURE)
+
+    if (!tileset) {
+      throw new Error('não foi possível criar o tileset da floresta.')
+    }
+
+    const ground = map.createBlankLayer('ground', tileset, 0, 0)
+    const trees = map.createBlankLayer('trees', tileset, 0, 0)
+
+    if (!ground || !trees) {
+      throw new Error('não foi possível criar as camadas da floresta.')
+    }
+
+    for (let row = 0; row < size; row++) {
+      for (let column = 0; column < size; column++) {
+        const isClearing =
+          row >= 3 * exitCell.row + 1 &&
+          row <= 3 * exitCell.row + 2 &&
+          column >= 3 * exitCell.column + 1 &&
+          column <= 3 * exitCell.column + 2
+
+        ground.putTileAt(
+          tileFrameFor('path', row, column, isClearing),
+          column,
+          row,
+        )
+
+        if (grid[row][column] === 'tree') {
+          trees.putTileAt(tileFrameFor('tree', row, column, false), column, row)
+        }
+      }
+    }
+
+    ground.setDepth(-10).setLighting(true)
+    trees.setDepth(-9).setLighting(true)
+    trees.setCollisionByExclusion([-1])
+
+    this.trees = trees
+    this.wallSegments = wallSegmentsFromGrid(grid)
   }
 
   private createMinimap(): void {
@@ -320,17 +297,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private getPlayerCell(): MazeCell {
-    const row = Phaser.Math.Clamp(
-      Math.floor(this.player.y / CELL_SIZE),
-      0,
-      this.mazeSize - 1,
-    )
-
-    const column = Phaser.Math.Clamp(
-      Math.floor(this.player.x / CELL_SIZE),
-      0,
-      this.mazeSize - 1,
-    )
+    const { row, column } = cellAt(this.player, this.mazeSize)
 
     return this.maze[row][column]
   }
@@ -458,7 +425,7 @@ export class GameScene extends Phaser.Scene {
 
     this.player.setCollideWorldBounds(true)
     this.player.setDepth(10)
-    this.player.setDrag(500, 500)
+    this.player.setDrag(500 * MOVEMENT_SCALE, 500 * MOVEMENT_SCALE)
   }
 
   private createExit(): void {
@@ -497,10 +464,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   private getCellCenter(row: number, column: number): Phaser.Math.Vector2 {
-    return new Phaser.Math.Vector2(
-      column * CELL_SIZE + CELL_SIZE / 2,
-      row * CELL_SIZE + CELL_SIZE / 2,
-    )
+    const center = cellCenter({ row, column })
+
+    return new Phaser.Math.Vector2(center.x, center.y)
   }
 
   private createKeyboardControls(): void {
@@ -523,7 +489,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private configureCollisions(): void {
-    this.physics.add.collider(this.player, this.walls)
+    this.physics.add.collider(this.player, this.trees)
 
     this.physics.add.overlap(this.player, this.exit, () => {
       this.handlePlayerFoundExit()
@@ -743,7 +709,7 @@ export class GameScene extends Phaser.Scene {
 
     visibilityMask.fillStyle(0xffffff, DARK_VISIBILITY_ALPHA)
 
-    visibilityMask.fillRect(0, 0, this.WORLD_WIDTH, this.WORLD_HEIGHT)
+    visibilityMask.fillRect(0, 0, this.worldPixels, this.worldPixels)
 
     visibilityMask.fillStyle(0xffffff, 0.65)
 
@@ -807,13 +773,7 @@ export class GameScene extends Phaser.Scene {
       playerCell.column,
     ).cell
 
-    this.hunter = new Hunter(
-      this,
-      this.maze,
-      spawnCell,
-      this.hunterSettings,
-      CELL_SIZE,
-    )
+    this.hunter = new Hunter(this, this.maze, spawnCell, this.hunterSettings)
 
     // A câmera do minimapa só ignora o que já existia quando foi criada.
     this.minimapCamera.ignore(this.hunter.gameObject)
@@ -838,8 +798,8 @@ export class GameScene extends Phaser.Scene {
       hunter: hunter.position,
       player: { x: this.player.x, y: this.player.y },
       flashlightOn: this.flashlightEnabled,
-      lightRadius: this.hunterSettings.lightPerceptionRadiusCells * CELL_SIZE,
-      darkRadius: DARK_PERCEPTION_CELLS * CELL_SIZE,
+      lightRadius: this.hunterSettings.lightPerceptionRadiusCells * CELL_PITCH,
+      darkRadius: DARK_PERCEPTION_CELLS * CELL_PITCH,
       walls: this.wallSegments,
     })
 

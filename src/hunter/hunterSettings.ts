@@ -1,3 +1,5 @@
+import { MOVEMENT_SCALE } from '../maze/MazeLayout'
+
 export interface HunterSettings {
   wanderSpeed: number
   investigateSpeed: number
@@ -6,9 +8,9 @@ export interface HunterSettings {
 }
 
 export const DEFAULT_HUNTER_SETTINGS: HunterSettings = {
-  wanderSpeed: 50,
-  investigateSpeed: 80,
-  huntSpeed: 120,
+  wanderSpeed: 50 * MOVEMENT_SCALE,
+  investigateSpeed: 80 * MOVEMENT_SCALE,
+  huntSpeed: 120 * MOVEMENT_SCALE,
   lightPerceptionRadiusCells: 5,
 }
 
