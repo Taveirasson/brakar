@@ -20,7 +20,7 @@ export class MenuScene extends Phaser.Scene {
       .setOrigin(0.5)
 
     this.add
-      .text(centerX, centerY - 35, 'Encontre a saída do labirinto', {
+      .text(centerX, centerY - 35, 'Ajude o Pipoca a voltar para casa', {
         fontFamily: 'monospace',
         fontSize: '18px',
         color: '#ffffff',

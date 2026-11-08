@@ -31,9 +31,9 @@ export class GameOverScene extends Phaser.Scene {
       .setStrokeStyle(3, 0x9b5de5)
 
     this.add
-      .text(centerX, centerY - 130, 'VOCÊ FOI PEGO', {
+      .text(centerX, centerY - 130, 'O ESTOURO TE PEGOU', {
         fontFamily: 'monospace',
-        fontSize: '46px',
+        fontSize: '38px',
         color: '#ff5d73',
       })
       .setOrigin(0.5)

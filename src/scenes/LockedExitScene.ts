@@ -26,7 +26,7 @@ export class LockedExitScene extends Phaser.Scene {
       .setStrokeStyle(3, 0xf4d35e)
 
     this.add
-      .text(centerX, centerY - 105, 'A SAÍDA ESTÁ TRANCADA', {
+      .text(centerX, centerY - 105, 'O CARRO JÁ SE FOI', {
         fontFamily: 'monospace',
         fontSize: '34px',
         color: '#f4d35e',
@@ -38,9 +38,9 @@ export class LockedExitScene extends Phaser.Scene {
         centerX,
         centerY - 25,
         [
-          'A tranca possui três espaços vazios.',
-          'Encontre os 3 fragmentos espalhados',
-          'pelo labirinto para abrir a saída.',
+          'O farol sumiu entre as árvores e a mata apagou.',
+          'Junte 3 vagalumes para clarear a trilha',
+          'até a estrada. E fuja do Estouro.',
         ],
         {
           fontFamily: 'monospace',
@@ -56,7 +56,7 @@ export class LockedExitScene extends Phaser.Scene {
       scene: this,
       x: centerX,
       y: centerY + 100,
-      label: 'BUSCAR ITENS',
+      label: 'PROCURAR VAGALUMES',
       onClick: () => {
         this.startSearch()
       },

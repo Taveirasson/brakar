@@ -25,7 +25,7 @@ export class VictoryScene extends Phaser.Scene {
       .setStrokeStyle(3, 0x9b5de5)
 
     this.add
-      .text(centerX, centerY - 130, 'VOCÊ ESCAPOU', {
+      .text(centerX, centerY - 130, 'PIPOCA ESCAPOU', {
         fontFamily: 'monospace',
         fontSize: '46px',
         color: '#f4d35e',
@@ -33,7 +33,7 @@ export class VictoryScene extends Phaser.Scene {
       .setOrigin(0.5)
 
     this.add
-      .text(centerX, centerY - 70, 'Você encontrou a saída do labirinto.', {
+      .text(centerX, centerY - 70, 'O Pipoca chegou à beira da estrada.', {
         fontFamily: 'monospace',
         fontSize: '18px',
         color: '#ffffff',
@@ -44,7 +44,7 @@ export class VictoryScene extends Phaser.Scene {
       .text(
         centerX,
         centerY - 35,
-        'Mas talvez alguma coisa tenha saído com você...',
+        'Mas o carro já tinha seguido... e a mata continua.',
         {
           fontFamily: 'monospace',
           fontSize: '14px',

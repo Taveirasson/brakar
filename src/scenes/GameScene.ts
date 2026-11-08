@@ -44,12 +44,25 @@ import {
   ensureAnimations,
   loadCharacterSprites,
 } from '../characters/characterAnimations'
+import {
+  FIREFLY_COLOR,
+  FIREFLY_TEXTURE,
+  HEADLIGHT_COLOR,
+  HEADLIGHTS_TEXTURE,
+  createFireflyTexture,
+  createHeadlightsTexture,
+} from '../characters/forestProps'
 
 const PLAYER_SIZE = 16
 const PLAYER_SPEED = 110 * MOVEMENT_SCALE
 const PLAYER_COLOR = 0x9b5de5
 
 const EXIT_SIZE = 18
+const HEADLIGHT_LIGHT_RADIUS = 110
+const HEADLIGHT_LIGHT_INTENSITY = 1.6
+
+const FIREFLY_LIGHT_RADIUS = 48
+const FIREFLY_LIGHT_INTENSITY = 1.2
 
 const CATCH_DISTANCE = (PLAYER_SIZE + HUNTER_SIZE) / 2
 const CATCH_EFFECT_MS = 400
@@ -103,6 +116,7 @@ export class GameScene extends Phaser.Scene {
   private player!: Phaser.Physics.Arcade.Sprite
   private usePipocaSprite = false
   private exit!: Phaser.Physics.Arcade.Image
+  private exitBlink?: Phaser.Tweens.Tween
   private flashlight?: Phaser.GameObjects.Light
 
   private flashlightEnabled = false
@@ -449,19 +463,32 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createExit(): void {
-    this.createSquareTexture('exit', EXIT_SIZE, 0xf4d35e)
+    createHeadlightsTexture(this)
 
     const exitCell = this.exitInformation.cell
 
     const exitPosition = this.getCellCenter(exitCell.row, exitCell.column)
 
+    // O farol do carro brilha sozinho (sem setLighting) e pisca fraco enquanto
+    // a saída está trancada.
     this.exit = this.physics.add.staticImage(
       exitPosition.x,
       exitPosition.y,
-      'exit',
+      HEADLIGHTS_TEXTURE,
     )
-    this.exit.setLighting(true)
     this.exit.setDepth(5)
+    ;(this.exit.body as Phaser.Physics.Arcade.StaticBody).setSize(
+      EXIT_SIZE,
+      EXIT_SIZE,
+    )
+
+    this.exitBlink = this.tweens.add({
+      targets: this.exit,
+      alpha: { from: 0.25, to: 0.7 },
+      duration: 700,
+      yoyo: true,
+      repeat: -1,
+    })
   }
 
   private createSquareTexture(
@@ -645,6 +672,7 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.flash(250, 244, 211, 94)
 
     this.time.delayedCall(300, () => {
+      this.clearNotifications()
       this.scene.pause()
       this.scene.run(SCENE_KEYS.victory)
     })
@@ -882,6 +910,7 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.flash(CATCH_EFFECT_MS, 180, 20, 30)
 
     this.time.delayedCall(CATCH_EFFECT_MS, () => {
+      this.clearNotifications()
       this.scene.pause()
       this.scene.run(SCENE_KEYS.gameOver, { night: 1 })
     })
@@ -948,7 +977,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private spawnRequiredItems(): void {
-    this.createSquareTexture('lock-item', 12, 0x55ff88)
+    createFireflyTexture(this)
 
     const itemCells: MazeCell[] = findItemCellsByQuadrant(
       this.maze,
@@ -958,22 +987,45 @@ export class GameScene extends Phaser.Scene {
     for (const cell of itemCells) {
       const position = this.getCellCenter(cell.row, cell.column)
 
+      // Vagalume: brilha sozinho, pulsa e flutua; a luz própria ilumina as copas em volta.
       const item = this.physics.add.staticImage(
         position.x,
         position.y,
-        'lock-item',
+        FIREFLY_TEXTURE,
+      )
+      item.setDepth(6)
+      ;(item.body as Phaser.Physics.Arcade.StaticBody).setSize(12, 12)
+      // Criado depois do minimapa: precisa ser ignorado por ele explicitamente.
+      this.minimapCamera.ignore(item)
+
+      const glow = this.lights.addLight(
+        position.x,
+        position.y,
+        FIREFLY_LIGHT_RADIUS,
+        FIREFLY_COLOR,
+        FIREFLY_LIGHT_INTENSITY,
       )
 
-      item.setLighting(true)
-      item.setDepth(6)
+      this.tweens.add({
+        targets: item,
+        alpha: { from: 0.55, to: 1 },
+        y: position.y - 2,
+        duration: 600 + Phaser.Math.Between(0, 300),
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      })
 
       this.physics.add.overlap(this.player, item, () => {
-        this.collectItem(item)
+        this.collectItem(item, glow)
       })
     }
   }
 
-  private collectItem(item: Phaser.Physics.Arcade.Image): void {
+  private collectItem(
+    item: Phaser.Physics.Arcade.Image,
+    glow: Phaser.GameObjects.Light,
+  ): void {
     if (this.gamePhase !== 'searchingItems') {
       return
     }
@@ -982,6 +1034,9 @@ export class GameScene extends Phaser.Scene {
       return
     }
 
+    this.burstFirefly(item.x, item.y)
+    this.tweens.killTweensOf(item)
+    this.lights.removeLight(glow)
     item.destroy()
     this.collectedItems++
 
@@ -993,10 +1048,25 @@ export class GameScene extends Phaser.Scene {
     this.showCollectedItemMessage()
   }
 
+  private burstFirefly(x: number, y: number): void {
+    const burst = this.add.particles(x, y, FIREFLY_TEXTURE, {
+      speed: { min: 20, max: 60 },
+      scale: { start: 0.8, end: 0 },
+      alpha: { start: 1, end: 0 },
+      lifespan: 500,
+      quantity: 10,
+      emitting: false,
+    })
+    burst.setDepth(7)
+    this.minimapCamera.ignore(burst)
+    burst.explode(10)
+    this.time.delayedCall(600, () => burst.destroy())
+  }
+
   private showCollectedItemMessage(): void {
     this.showNotification(
-      `FRAGMENTO ${this.collectedItems}/${this.requiredItems}`,
-      '#55ff88',
+      `VAGALUME ${this.collectedItems}/${this.requiredItems}`,
+      '#d9ff6b',
       1000,
     )
   }
@@ -1004,11 +1074,33 @@ export class GameScene extends Phaser.Scene {
   private unlockExit(): void {
     this.gamePhase = 'returningToExit'
 
-    this.exit.setTint(0x55ff88)
+    // O farol acende de vez: para de piscar e passa a iluminar a clareira.
+    this.exitBlink?.stop()
+    this.exit.setAlpha(1)
+    this.lights.addLight(
+      this.exit.x,
+      this.exit.y,
+      HEADLIGHT_LIGHT_RADIUS,
+      HEADLIGHT_COLOR,
+      HEADLIGHT_LIGHT_INTENSITY,
+    )
 
-    this.cameras.main.flash(250, 85, 255, 136)
+    this.cameras.main.flash(250, 255, 242, 176)
 
-    this.showNotification('A SAÍDA FOI DESTRANCADA', '#f4d35e', 2200)
+    this.showNotification(
+      'O FAROL ACENDEU! CORRA PARA A ESTRADA',
+      '#fff2b0',
+      2200,
+    )
+  }
+
+  /** Evita que um aviso pendente apareça por cima da tela de vitória ou derrota. */
+  private clearNotifications(): void {
+    const notificationScene = this.scene.get(
+      SCENE_KEYS.notifications,
+    ) as NotificationScene
+
+    notificationScene.clear()
   }
 
   private startNotificationScene(): void {
