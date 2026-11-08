@@ -1,5 +1,6 @@
 import Phaser from 'phaser'
 import { SCENE_KEYS } from '../config/sceneKeys'
+import { FONT_FAMILY, THEME } from '../ui/theme'
 
 export type NotificationOptions = {
   color?: string
@@ -52,13 +53,15 @@ export class NotificationScene extends Phaser.Scene {
 
     const centerX = this.scale.width / 2
 
-    const background = this.add
-      .rectangle(0, 0, 520, 64, 0x09070f, 0.94)
-      .setStrokeStyle(2, 0x5a4473)
+    const background = this.add.graphics()
+    background.fillStyle(THEME.panel, 0.94)
+    background.fillRoundedRect(-260, -32, 520, 64, 14)
+    background.lineStyle(2, THEME.buttonBorder, 1)
+    background.strokeRoundedRect(-260, -32, 520, 64, 14)
 
     const text = this.add
       .text(0, 0, notification.message, {
-        fontFamily: 'monospace',
+        fontFamily: FONT_FAMILY,
         fontSize: '20px',
         color: notification.color,
         align: 'center',

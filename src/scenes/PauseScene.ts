@@ -1,6 +1,7 @@
 import Phaser from 'phaser'
 import { SCENE_KEYS } from '../config/sceneKeys'
 import { createTextButton } from '../ui/createTextButton'
+import { addBackdrop, addPanel, addText } from '../ui/theme'
 
 export class PauseScene extends Phaser.Scene {
   constructor() {
@@ -11,27 +12,14 @@ export class PauseScene extends Phaser.Scene {
     const centerX = this.scale.width / 2
     const centerY = this.scale.height / 2
 
-    this.add.rectangle(
-      centerX,
-      centerY,
-      this.scale.width,
-      this.scale.height,
-      0x09070f,
-      0.8,
-    )
-
-    this.add
-      .text(centerX, centerY - 80, 'JOGO PAUSADO', {
-        fontFamily: 'monospace',
-        fontSize: '42px',
-        color: '#ffffff',
-      })
-      .setOrigin(0.5)
+    addBackdrop(this, 0.78)
+    addPanel(this, centerX, centerY + 15, 440, 350)
+    addText(this, centerX, centerY - 105, 'PAUSADO', 'heading')
 
     createTextButton({
       scene: this,
       x: centerX,
-      y: centerY,
+      y: centerY - 25,
       label: 'CONTINUAR',
       onClick: () => {
         this.resumeGame()
@@ -41,7 +29,7 @@ export class PauseScene extends Phaser.Scene {
     createTextButton({
       scene: this,
       x: centerX,
-      y: centerY + 70,
+      y: centerY + 45,
       label: 'REINICIAR',
       onClick: () => {
         this.restartGame()
@@ -51,7 +39,7 @@ export class PauseScene extends Phaser.Scene {
     createTextButton({
       scene: this,
       x: centerX,
-      y: centerY + 140,
+      y: centerY + 115,
       label: 'VOLTAR AO MENU',
       onClick: () => {
         this.returnToMenu()

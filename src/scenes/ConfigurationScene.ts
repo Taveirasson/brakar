@@ -7,6 +7,7 @@ import {
   saveMazeSize,
 } from '../config/mazeSettings'
 import type { NotificationScene } from './NotificationScene'
+import { addPanel, addText } from '../ui/theme'
 
 export class ConfigurationScene extends Phaser.Scene {
   constructor() {
@@ -17,22 +18,11 @@ export class ConfigurationScene extends Phaser.Scene {
     const centerX = this.scale.width / 2
     const centerY = this.scale.height / 2
 
-    this.add
-      .text(centerX, centerY - 100, 'CONFIGURAÇÕES', {
-        fontFamily: 'monospace',
-        fontSize: '32px',
-        color: '#9b5de5',
-      })
-      .setOrigin(0.5)
+    addPanel(this, centerX, centerY + 15, 480, 400)
+    addText(this, centerX, centerY - 130, 'CONFIGURAÇÕES', 'heading')
 
     let selectedSize = getSavedMazeSize()
-    this.add
-      .text(centerX, centerY - 45, 'TAMANHO DO LABIRINTO', {
-        fontFamily: 'monospace',
-        fontSize: '20px',
-        color: '#ffffff',
-      })
-      .setOrigin(0.5)
+    addText(this, centerX, centerY - 55, 'TAMANHO DA MATA', 'body')
 
     const dropdown = document.createElement('details')
     dropdown.className = 'maze-dropdown'

@@ -28,6 +28,7 @@ import type { NotificationScene } from './NotificationScene'
 import { getSavedMazeSize } from '../config/mazeSettings'
 import { castRay, type Segment } from '../vision/lineOfSight'
 import { Hunter } from '../hunter/Hunter'
+import { GameEffects } from '../effects/GameEffects'
 import { canPerceivePlayer, isCaught } from '../hunter/hunterPerception'
 import {
   DARK_PERCEPTION_CELLS,
@@ -132,6 +133,7 @@ export class GameScene extends Phaser.Scene {
   private minimapGraphics!: Phaser.GameObjects.Graphics
 
   private hunter?: Hunter
+  private effects?: GameEffects
   private readonly hunterSettings: HunterSettings = DEFAULT_HUNTER_SETTINGS
 
   private visitedCells = new Set<string>()
@@ -174,6 +176,12 @@ export class GameScene extends Phaser.Scene {
     this.configureCollisions()
     this.configureCamera()
     this.createMinimap()
+    this.effects = new GameEffects(
+      this,
+      this.player,
+      this.minimapCamera,
+      this.worldPixels,
+    )
     this.configurePauseControl()
     this.startNotificationScene()
   }
@@ -182,6 +190,7 @@ export class GameScene extends Phaser.Scene {
     this.updatePlayerMovement()
     this.updatePlayerAnimation()
     this.updateHunter(delta)
+    this.effects?.update(this.hunter?.state === 'hunting')
 
     if (Phaser.Input.Keyboard.JustDown(this.flashlightToggleKey)) {
       this.toggleFlashlight()
@@ -665,6 +674,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.gamePhase = 'victory'
+    this.effects?.stop()
     this.playerFoundExit = true
     this.player.setVelocity(0, 0)
 
@@ -847,6 +857,7 @@ export class GameScene extends Phaser.Scene {
 
     // A câmera do minimapa só ignora o que já existia quando foi criada.
     this.minimapCamera.ignore(this.hunter.gameObject)
+    this.effects?.attachHunter(this.hunter.gameObject)
   }
 
   private updateHunter(delta: number): void {
@@ -903,6 +914,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.gamePhase = 'defeat'
+    this.effects?.stop()
     this.player.setVelocity(0, 0)
 
     this.physics.pause()

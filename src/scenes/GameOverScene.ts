@@ -1,6 +1,7 @@
 import Phaser from 'phaser'
 import { SCENE_KEYS } from '../config/sceneKeys'
 import { createTextButton } from '../ui/createTextButton'
+import { addBackdrop, addPanel, addText, THEME } from '../ui/theme'
 
 export class GameOverScene extends Phaser.Scene {
   private night = 1
@@ -17,39 +18,23 @@ export class GameOverScene extends Phaser.Scene {
     const centerX = this.scale.width / 2
     const centerY = this.scale.height / 2
 
-    this.add.rectangle(
+    addBackdrop(this, 0.88)
+    addPanel(this, centerX, centerY, 580, 400, 0xc0504f)
+    addText(
+      this,
       centerX,
-      centerY,
-      this.scale.width,
-      this.scale.height,
-      0x09070f,
-      0.9,
+      centerY - 130,
+      'O ESTOURO TE PEGOU',
+      'heading',
+      THEME.danger,
     )
-
-    this.add
-      .rectangle(centerX, centerY, 520, 390, 0x171120)
-      .setStrokeStyle(3, 0x9b5de5)
-
-    this.add
-      .text(centerX, centerY - 130, 'O ESTOURO TE PEGOU', {
-        fontFamily: 'monospace',
-        fontSize: '38px',
-        color: '#ff5d73',
-      })
-      .setOrigin(0.5)
-
-    this.add
-      .text(
-        centerX,
-        centerY - 70,
-        `Você não sobreviveu à noite ${this.night}.`,
-        {
-          fontFamily: 'monospace',
-          fontSize: '18px',
-          color: '#ffffff',
-        },
-      )
-      .setOrigin(0.5)
+    addText(
+      this,
+      centerX,
+      centerY - 70,
+      `Você não sobreviveu à noite ${this.night}.`,
+      'body',
+    )
 
     createTextButton({
       scene: this,
@@ -71,7 +56,7 @@ export class GameOverScene extends Phaser.Scene {
       },
     })
 
-    this.cameras.main.fadeIn(400, 9, 7, 15)
+    this.cameras.main.fadeIn(400, 5, 10, 7)
   }
 
   private restartGame(): void {

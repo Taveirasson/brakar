@@ -6,7 +6,7 @@ Ligados ao jogo em `src/characters/` (jogador = Pipoca, caçador = Estouro).
 
 ## pipoca.png (128x128)
 
-Vira-lata preto e branco. Corpo visível cabe em ~20x20 px no centro do frame.
+Vira-lata preto e branco **visto de cima** (top-down) em todas as direções; as linhas de baixo e de cima são a vista lateral girada. Corpo visível cabe em ~24x16 px no centro do frame.
 
 | Linha | Animação    | Frames | fps sugerido | Observação                                              |
 | ----- | ----------- | ------ | ------------ | ------------------------------------------------------- |

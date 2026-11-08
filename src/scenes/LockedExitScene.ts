@@ -2,6 +2,7 @@ import Phaser from 'phaser'
 import { SCENE_KEYS } from '../config/sceneKeys'
 import { createTextButton } from '../ui/createTextButton'
 import { GameScene } from './GameScene'
+import { addBackdrop, addPanel, addText } from '../ui/theme'
 
 export class LockedExitScene extends Phaser.Scene {
   constructor() {
@@ -12,45 +13,20 @@ export class LockedExitScene extends Phaser.Scene {
     const centerX = this.scale.width / 2
     const centerY = this.scale.height / 2
 
-    this.add.rectangle(
+    addBackdrop(this, 0.84)
+    addPanel(this, centerX, centerY, 620, 340)
+    addText(this, centerX, centerY - 110, 'O CARRO JÁ SE FOI', 'heading')
+    addText(
+      this,
       centerX,
-      centerY,
-      this.scale.width,
-      this.scale.height,
-      0x09070f,
-      0.88,
+      centerY - 25,
+      [
+        'O farol sumiu entre as árvores e a mata apagou.',
+        'Junte 3 vagalumes para clarear a trilha',
+        'até a estrada. E fuja do Estouro.',
+      ],
+      'body',
     )
-
-    this.add
-      .rectangle(centerX, centerY, 580, 330, 0x171120)
-      .setStrokeStyle(3, 0xf4d35e)
-
-    this.add
-      .text(centerX, centerY - 105, 'O CARRO JÁ SE FOI', {
-        fontFamily: 'monospace',
-        fontSize: '34px',
-        color: '#f4d35e',
-      })
-      .setOrigin(0.5)
-
-    this.add
-      .text(
-        centerX,
-        centerY - 25,
-        [
-          'O farol sumiu entre as árvores e a mata apagou.',
-          'Junte 3 vagalumes para clarear a trilha',
-          'até a estrada. E fuja do Estouro.',
-        ],
-        {
-          fontFamily: 'monospace',
-          fontSize: '17px',
-          color: '#ffffff',
-          align: 'center',
-          lineSpacing: 8,
-        },
-      )
-      .setOrigin(0.5)
 
     createTextButton({
       scene: this,

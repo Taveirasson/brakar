@@ -1,5 +1,6 @@
 import Phaser from 'phaser'
 import './style.css'
+import './ui/theme.css'
 import { GameScene } from './scenes/GameScene'
 import { MenuScene } from './scenes/MenuScene'
 import { PauseScene } from './scenes/PauseScene'
@@ -52,4 +53,13 @@ const config: Phaser.Types.Core.GameConfig = {
   },
 }
 
-new Phaser.Game(config)
+// O Phaser desenha o texto uma vez: espera a fonte do tema carregar (no máximo
+// 1,5 s, para não travar sem internet) antes de criar o jogo.
+const fontReady = document.fonts
+  .load('20px "Pixelify Sans"')
+  .catch(() => undefined)
+const fontTimeout = new Promise((resolve) => setTimeout(resolve, 1500))
+
+Promise.race([fontReady, fontTimeout]).then(() => {
+  new Phaser.Game(config)
+})

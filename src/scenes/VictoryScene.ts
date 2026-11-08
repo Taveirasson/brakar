@@ -1,6 +1,7 @@
 import Phaser from 'phaser'
 import { SCENE_KEYS } from '../config/sceneKeys'
 import { createTextButton } from '../ui/createTextButton'
+import { addBackdrop, addPanel, addText } from '../ui/theme'
 
 export class VictoryScene extends Phaser.Scene {
   constructor() {
@@ -11,47 +12,23 @@ export class VictoryScene extends Phaser.Scene {
     const centerX = this.scale.width / 2
     const centerY = this.scale.height / 2
 
-    this.add.rectangle(
+    addBackdrop(this, 0.88)
+    addPanel(this, centerX, centerY, 580, 400)
+    addText(this, centerX, centerY - 130, 'PIPOCA ESCAPOU', 'heading')
+    addText(
+      this,
       centerX,
-      centerY,
-      this.scale.width,
-      this.scale.height,
-      0x09070f,
-      0.9,
+      centerY - 70,
+      'O Pipoca chegou à beira da estrada.',
+      'body',
     )
-
-    this.add
-      .rectangle(centerX, centerY, 520, 390, 0x171120)
-      .setStrokeStyle(3, 0x9b5de5)
-
-    this.add
-      .text(centerX, centerY - 130, 'PIPOCA ESCAPOU', {
-        fontFamily: 'monospace',
-        fontSize: '46px',
-        color: '#f4d35e',
-      })
-      .setOrigin(0.5)
-
-    this.add
-      .text(centerX, centerY - 70, 'O Pipoca chegou à beira da estrada.', {
-        fontFamily: 'monospace',
-        fontSize: '18px',
-        color: '#ffffff',
-      })
-      .setOrigin(0.5)
-
-    this.add
-      .text(
-        centerX,
-        centerY - 35,
-        'Mas o carro já tinha seguido... e a mata continua.',
-        {
-          fontFamily: 'monospace',
-          fontSize: '14px',
-          color: '#a999b5',
-        },
-      )
-      .setOrigin(0.5)
+    addText(
+      this,
+      centerX,
+      centerY - 38,
+      'Mas o carro já tinha seguido... e a mata continua.',
+      'muted',
+    )
 
     createTextButton({
       scene: this,
@@ -73,7 +50,7 @@ export class VictoryScene extends Phaser.Scene {
       },
     })
 
-    this.cameras.main.fadeIn(400, 9, 7, 15)
+    this.cameras.main.fadeIn(400, 5, 10, 7)
   }
 
   private restartGame(): void {
