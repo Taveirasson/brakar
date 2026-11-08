@@ -6,14 +6,14 @@ Ligados ao jogo em `src/characters/` (jogador = Pipoca, caçador = Estouro).
 
 ## pipoca.png (128x128)
 
-Vira-lata preto e branco **visto de cima** (top-down) em todas as direções; as linhas de baixo e de cima são a vista lateral girada. Corpo visível cabe em ~24x16 px no centro do frame.
+Vira-lata preto e branco **visto de cima** (top-down). O jogo usa só `walk-side` e `idle` (sempre na horizontal, espelhados para a esquerda); `walk-down` e `walk-up` ficam na folha mas não são usados. Corpo visível cabe em ~24x16 px no centro do frame.
 
-| Linha | Animação    | Frames | fps sugerido | Observação                                              |
-| ----- | ----------- | ------ | ------------ | ------------------------------------------------------- |
-| 0     | `walk-down` | 4      | 8            | de frente                                               |
-| 1     | `walk-up`   | 4      | 8            | de costas                                               |
-| 2     | `walk-side` | 4      | 8            | olhando para a direita (espelhar p/ esquerda)           |
-| 3     | `idle`      | 2      | 3            | olhando para baixo, rabo abanando; colunas 2 e 3 vazias |
+| Linha | Animação    | Frames | fps sugerido | Observação                                                               |
+| ----- | ----------- | ------ | ------------ | ------------------------------------------------------------------------ |
+| 0     | `walk-down` | 4      | 8            | de frente                                                                |
+| 1     | `walk-up`   | 4      | 8            | de costas                                                                |
+| 2     | `walk-side` | 4      | 8            | olhando para a direita (espelhar p/ esquerda)                            |
+| 3     | `idle`      | 2      | 3            | horizontal (olhando para a direita), rabo abanando; colunas 2 e 3 vazias |
 
 ## estouro.png (128x64)
 

@@ -32,22 +32,25 @@ export interface PipocaAnimation {
   flipX: boolean
 }
 
+// Movimento horizontal abaixo disso não muda o lado para onde o Pipoca olha.
+const TURN_SPEED = 1
+
+/**
+ * O Pipoca sempre aparece na horizontal (visto de cima, olhando para um lado).
+ * Andando para cima ou para baixo, ele continua virado para o último lado.
+ */
 export function pickPipocaAnimation(
   velocityX: number,
   velocityY: number,
+  facingLeft: boolean,
 ): PipocaAnimation {
+  const flipX = Math.abs(velocityX) >= TURN_SPEED ? velocityX < 0 : facingLeft
+
   if (Math.hypot(velocityX, velocityY) < IDLE_SPEED) {
-    return { key: 'pipoca-idle', flipX: false }
+    return { key: 'pipoca-idle', flipX: facingLeft }
   }
 
-  if (Math.abs(velocityX) >= Math.abs(velocityY)) {
-    return { key: 'pipoca-walk-side', flipX: velocityX < 0 }
-  }
-
-  return {
-    key: velocityY > 0 ? 'pipoca-walk-down' : 'pipoca-walk-up',
-    flipX: false,
-  }
+  return { key: 'pipoca-walk-side', flipX }
 }
 
 export function estouroAnimationFor(state: HunterState): string {

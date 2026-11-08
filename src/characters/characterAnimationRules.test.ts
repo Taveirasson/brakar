@@ -7,44 +7,51 @@ import {
 } from './characterAnimationRules'
 
 describe('pickPipocaAnimation', () => {
-  it('parado usa idle sem espelhar', () => {
-    expect(pickPipocaAnimation(0, 0)).toEqual({
+  it('parado usa idle horizontal e mantém o lado em que estava', () => {
+    expect(pickPipocaAnimation(0, 0, false)).toEqual({
       key: 'pipoca-idle',
       flipX: false,
+    })
+    expect(pickPipocaAnimation(0, 0, true)).toEqual({
+      key: 'pipoca-idle',
+      flipX: true,
     })
   })
 
   it('velocidade residual do drag conta como parado', () => {
-    expect(pickPipocaAnimation(5, -4).key).toBe('pipoca-idle')
-  })
-
-  it('andando para baixo e para cima', () => {
-    expect(pickPipocaAnimation(0, 165)).toEqual({
-      key: 'pipoca-walk-down',
-      flipX: false,
-    })
-    expect(pickPipocaAnimation(0, -165)).toEqual({
-      key: 'pipoca-walk-up',
-      flipX: false,
-    })
+    expect(pickPipocaAnimation(5, -4, false).key).toBe('pipoca-idle')
   })
 
   it('andando para os lados espelha só para a esquerda', () => {
-    expect(pickPipocaAnimation(165, 0)).toEqual({
+    expect(pickPipocaAnimation(165, 0, true)).toEqual({
       key: 'pipoca-walk-side',
       flipX: false,
     })
-    expect(pickPipocaAnimation(-165, 0)).toEqual({
+    expect(pickPipocaAnimation(-165, 0, false)).toEqual({
       key: 'pipoca-walk-side',
       flipX: true,
     })
   })
 
-  it('na diagonal vale o eixo dominante; empate fica de lado', () => {
-    expect(pickPipocaAnimation(50, 120).key).toBe('pipoca-walk-down')
-    expect(pickPipocaAnimation(-117, -117)).toEqual({
+  it('para cima e para baixo também usa o sprite horizontal, virado para o último lado', () => {
+    expect(pickPipocaAnimation(0, 165, false)).toEqual({
+      key: 'pipoca-walk-side',
+      flipX: false,
+    })
+    expect(pickPipocaAnimation(0, -165, true)).toEqual({
       key: 'pipoca-walk-side',
       flipX: true,
+    })
+  })
+
+  it('na diagonal o lado segue o movimento horizontal', () => {
+    expect(pickPipocaAnimation(-50, 120, false)).toEqual({
+      key: 'pipoca-walk-side',
+      flipX: true,
+    })
+    expect(pickPipocaAnimation(50, -120, true)).toEqual({
+      key: 'pipoca-walk-side',
+      flipX: false,
     })
   })
 })
