@@ -3,68 +3,99 @@ import {
   ESTOURO_ANIMATIONS,
   PIPOCA_ANIMATIONS,
   estouroAnimationFor,
-  pickPipocaAnimation,
+  INITIAL_FACING,
+  animationForFacing,
+  standingFrame,
+  updateFacing,
 } from './characterAnimationRules'
 
-describe('pickPipocaAnimation', () => {
-  it('parado usa idle sem espelhar', () => {
-    expect(pickPipocaAnimation(0, 0)).toEqual({
-      key: 'pipoca-idle',
-      flipX: false,
-    })
-  })
-
-  it('velocidade residual do drag conta como parado', () => {
-    expect(pickPipocaAnimation(5, -4).key).toBe('pipoca-idle')
-  })
-
-  it('andando para baixo e para cima', () => {
-    expect(pickPipocaAnimation(0, 165)).toEqual({
+describe('animationForFacing', () => {
+  it('direções retas: frente, costas e lados (esquerda espelhada)', () => {
+    expect(animationForFacing({ h: 0, v: 1 })).toEqual({
       key: 'pipoca-walk-down',
       flipX: false,
     })
-    expect(pickPipocaAnimation(0, -165)).toEqual({
+    expect(animationForFacing({ h: 0, v: -1 })).toEqual({
       key: 'pipoca-walk-up',
       flipX: false,
     })
-  })
-
-  it('andando para os lados espelha só para a esquerda', () => {
-    expect(pickPipocaAnimation(165, 0)).toEqual({
+    expect(animationForFacing({ h: 1, v: 0 })).toEqual({
       key: 'pipoca-walk-side',
       flipX: false,
     })
-    expect(pickPipocaAnimation(-165, 0)).toEqual({
+    expect(animationForFacing({ h: -1, v: 0 })).toEqual({
       key: 'pipoca-walk-side',
       flipX: true,
     })
   })
 
-  it('na diagonal aponta para a diagonal, espelhando para a esquerda', () => {
-    expect(pickPipocaAnimation(117, 117)).toEqual({
+  it('diagonais (esquerda espelhada)', () => {
+    expect(animationForFacing({ h: 1, v: 1 })).toEqual({
       key: 'pipoca-walk-diag-down',
       flipX: false,
     })
-    expect(pickPipocaAnimation(-117, 117)).toEqual({
+    expect(animationForFacing({ h: -1, v: 1 })).toEqual({
       key: 'pipoca-walk-diag-down',
       flipX: true,
     })
-    expect(pickPipocaAnimation(117, -117)).toEqual({
+    expect(animationForFacing({ h: 1, v: -1 })).toEqual({
       key: 'pipoca-walk-diag-up',
       flipX: false,
     })
-    expect(pickPipocaAnimation(-117, -117)).toEqual({
+    expect(animationForFacing({ h: -1, v: -1 })).toEqual({
       key: 'pipoca-walk-diag-up',
       flipX: true,
     })
   })
+})
 
-  it('quase reto (fora da faixa de 22,5° da diagonal) usa a direção reta', () => {
-    expect(pickPipocaAnimation(30, 120).key).toBe('pipoca-walk-down')
-    expect(pickPipocaAnimation(-120, 30)).toEqual({
-      key: 'pipoca-walk-side',
-      flipX: true,
+describe('updateFacing', () => {
+  it('começa olhando para baixo', () => {
+    expect(INITIAL_FACING).toMatchObject({ h: 0, v: 1 })
+  })
+
+  it('segue as teclas apertadas', () => {
+    expect(updateFacing(INITIAL_FACING, -1, 0, 16)).toMatchObject({
+      h: -1,
+      v: 0,
     })
+    expect(updateFacing(INITIAL_FACING, 1, -1, 16)).toMatchObject({
+      h: 1,
+      v: -1,
+    })
+  })
+
+  it('sem tecla apertada mantém a última direção (parado ou deslizando)', () => {
+    const left = updateFacing(INITIAL_FACING, -1, 0, 16)
+    expect(updateFacing(left, 0, 0, 500)).toMatchObject({ h: -1, v: 0 })
+  })
+
+  it('soltar as duas teclas da diagonal quase juntas mantém a diagonal', () => {
+    let facing = updateFacing(INITIAL_FACING, 1, 1, 16)
+    facing = updateFacing(facing, 0, 1, 40) // soltou a direita um pouco antes
+    facing = updateFacing(facing, 0, 0, 16) // soltou a de baixo
+    expect(facing).toMatchObject({ h: 1, v: 1 })
+  })
+
+  it('segurar só uma tecla da diagonal por mais tempo vira a direção reta', () => {
+    let facing = updateFacing(INITIAL_FACING, 1, 1, 16)
+    facing = updateFacing(facing, 0, 1, 50)
+    facing = updateFacing(facing, 0, 1, 50)
+    expect(facing).toMatchObject({ h: 0, v: 1 })
+  })
+
+  it('trocar para uma direção que não é parte da diagonal vira na hora', () => {
+    let facing = updateFacing(INITIAL_FACING, 1, 1, 16)
+    facing = updateFacing(facing, -1, 0, 16)
+    expect(facing).toMatchObject({ h: -1, v: 0 })
+  })
+})
+
+describe('standingFrame', () => {
+  it('é o frame de pernas paradas (o segundo) da animação de andar', () => {
+    expect(standingFrame('pipoca-walk-down')).toBe(1)
+    expect(standingFrame('pipoca-walk-side')).toBe(9)
+    expect(standingFrame('pipoca-walk-diag-up')).toBe(21)
   })
 })
 

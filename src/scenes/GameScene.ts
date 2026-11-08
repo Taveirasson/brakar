@@ -14,6 +14,7 @@ import {
   isCellInterior,
   wallSegmentsFromGrid,
   worldSize,
+  type TileType,
 } from '../maze/MazeLayout'
 import {
   FALLBACK_FRAME_COLORS,
@@ -42,7 +43,12 @@ import {
 import {
   PIPOCA_ANIMATIONS,
   PIPOCA_TEXTURE,
-  pickPipocaAnimation,
+  IDLE_SPEED,
+  INITIAL_FACING,
+  animationForFacing,
+  standingFrame,
+  updateFacing,
+  type FacingState,
 } from '../characters/characterAnimationRules'
 import {
   ensureAnimations,
@@ -62,6 +68,9 @@ const PLAYER_SPEED = 110 * MOVEMENT_SCALE
 const PLAYER_COLOR = 0x9b5de5
 
 const EXIT_SIZE = 18
+
+// Largura (em tiles) da mata decorativa em volta do labirinto.
+const OUTER_FOREST_TILES = 7
 const HEADLIGHT_LIGHT_RADIUS = 110
 const HEADLIGHT_LIGHT_INTENSITY = 1.6
 
@@ -119,6 +128,8 @@ export class GameScene extends Phaser.Scene {
 
   private player!: Phaser.Physics.Arcade.Sprite
   private usePipocaSprite = false
+  private pipocaFacing: FacingState = INITIAL_FACING
+  private inputDirection = { h: 0, v: 0 }
   private exit!: Phaser.Physics.Arcade.Image
   private exitBlink?: Phaser.Tweens.Tween
   private flashlight?: Phaser.GameObjects.Light
@@ -169,6 +180,8 @@ export class GameScene extends Phaser.Scene {
     this.visibilityMaskCreated = false
 
     this.hunter = undefined
+    this.pipocaFacing = INITIAL_FACING
+    this.inputDirection = { h: 0, v: 0 }
 
     this.configureLighting()
     this.generateMaze()
@@ -191,7 +204,7 @@ export class GameScene extends Phaser.Scene {
 
   update(_time: number, delta: number): void {
     this.updatePlayerMovement()
-    this.updatePlayerAnimation()
+    this.updatePlayerAnimation(delta)
     this.updateHunter(delta)
     this.effects?.update(this.hunter?.state === 'hunting')
 
@@ -315,6 +328,91 @@ export class GameScene extends Phaser.Scene {
 
     this.trees = trees
     this.wallSegments = wallSegmentsFromGrid(grid)
+
+    this.createOuterForest(grid)
+  }
+
+  /**
+   * Mata densa em volta do labirinto (só decoração, sem colisão), para a câmera
+   * não mostrar o fundo preto perto das bordas. Uma segunda camada de copas,
+   * deslocada meio tile, cobre os vãos entre as árvores.
+   */
+  private createOuterForest(grid: TileType[][]): void {
+    const mazeTiles = grid.length
+    const pad = OUTER_FOREST_TILES
+    const total = mazeTiles + pad * 2
+    const origin = -pad * TILE_SIZE
+
+    const map = this.make.tilemap({
+      tileWidth: TILE_SIZE,
+      tileHeight: TILE_SIZE,
+      width: total,
+      height: total,
+    })
+    const tileset = map.addTilesetImage(FOREST_TEXTURE)
+    const ground =
+      tileset && map.createBlankLayer('outer-ground', tileset, origin, origin)
+    const trees =
+      tileset && map.createBlankLayer('outer-trees', tileset, origin, origin)
+    const canopy =
+      tileset &&
+      map.createBlankLayer(
+        'outer-canopy',
+        tileset,
+        origin + TILE_SIZE / 2,
+        origin + TILE_SIZE / 2,
+      )
+
+    if (!ground || !trees || !canopy) {
+      throw new Error('não foi possível criar a mata em volta do labirinto.')
+    }
+
+    const insideMaze = (row: number, column: number) =>
+      row >= 0 && row < mazeTiles && column >= 0 && column < mazeTiles
+
+    for (let row = 0; row < total; row++) {
+      for (let column = 0; column < total; column++) {
+        const mazeRow = row - pad
+        const mazeColumn = column - pad
+
+        if (insideMaze(mazeRow, mazeColumn)) {
+          continue
+        }
+
+        ground.putTileAt(
+          groundFrameFor(true, mazeRow, mazeColumn, false),
+          column,
+          row,
+        )
+        trees.putTileAt(
+          tileFrameFor('tree', mazeRow, mazeColumn, false),
+          column,
+          row,
+        )
+
+        // o tile deslocado ocupa 2x2 tiles da grade: pode cobrir árvores da
+        // borda do labirinto, mas nunca a trilha
+        const overlapsPath = [0, 1].some((dr) =>
+          [0, 1].some(
+            (dc) =>
+              insideMaze(mazeRow + dr, mazeColumn + dc) &&
+              grid[mazeRow + dr][mazeColumn + dc] === 'path',
+          ),
+        )
+
+        if (!overlapsPath) {
+          canopy.putTileAt(
+            tileFrameFor('tree', mazeRow + 50, mazeColumn + 50, false),
+            column,
+            row,
+          )
+        }
+      }
+    }
+
+    ground.setDepth(-10).setLighting(true)
+    trees.setDepth(-9).setLighting(true)
+    canopy.setDepth(-9).setLighting(true)
   }
 
   private createMinimap(): void {
@@ -585,17 +683,32 @@ export class GameScene extends Phaser.Scene {
     camera.startFollow(this.player, true, 1, 1)
   }
 
-  private updatePlayerAnimation(): void {
+  private updatePlayerAnimation(deltaMs: number): void {
     const body = this.player.body
 
     if (!this.usePipocaSprite || !body) {
       return
     }
 
-    const animation = pickPipocaAnimation(body.velocity.x, body.velocity.y)
+    // a direção vem das teclas apertadas; deslizando ou parado, mantém a última
+    this.pipocaFacing = updateFacing(
+      this.pipocaFacing,
+      this.inputDirection.h,
+      this.inputDirection.v,
+      deltaMs,
+    )
+    const animation = animationForFacing(this.pipocaFacing)
 
     this.player.setFlipX(animation.flipX)
-    this.player.anims.play(animation.key, true)
+
+    if (body.velocity.length() >= IDLE_SPEED) {
+      this.player.anims.play(animation.key, true)
+      return
+    }
+
+    // parado: em pé, olhando para a última direção em que andou
+    this.player.anims.stop()
+    this.player.setFrame(standingFrame(animation.key))
   }
 
   private updatePlayerMovement(): void {
@@ -616,6 +729,8 @@ export class GameScene extends Phaser.Scene {
     const horizontalDirection = Number(movingRight) - Number(movingLeft)
 
     const verticalDirection = Number(movingDown) - Number(movingUp)
+
+    this.inputDirection = { h: horizontalDirection, v: verticalDirection }
 
     const isMovingDiagonally =
       horizontalDirection !== 0 && verticalDirection !== 0
@@ -814,7 +929,14 @@ export class GameScene extends Phaser.Scene {
 
     visibilityMask.fillStyle(0xffffff, DARK_VISIBILITY_ALPHA)
 
-    visibilityMask.fillRect(0, 0, this.worldPixels, this.worldPixels)
+    // cobre também a mata em volta do labirinto
+    const margin = OUTER_FOREST_TILES * TILE_SIZE
+    visibilityMask.fillRect(
+      -margin,
+      -margin,
+      this.worldPixels + margin * 2,
+      this.worldPixels + margin * 2,
+    )
 
     visibilityMask.fillStyle(0xffffff, 0.65)
 

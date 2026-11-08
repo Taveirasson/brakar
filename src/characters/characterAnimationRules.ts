@@ -27,48 +27,112 @@ export const ESTOURO_ANIMATIONS: AnimationDefinition[] = [
 ]
 
 // Abaixo disso o Pipoca está só deslizando pelo drag: conta como parado.
-const IDLE_SPEED = 10
+export const IDLE_SPEED = 10
 
-export interface PipocaAnimation {
-  key: string
-  flipX: boolean
+// Tempo para aceitar a troca de uma diagonal para uma das suas direções retas:
+// ninguém solta duas teclas exatamente juntas, e sem essa folga o Pipoca pararia
+// olhando reto depois de andar na diagonal.
+const RELEASE_GRACE_MS = 90
+
+/** Direção para onde o Pipoca olha: h e v valem -1, 0 ou 1. */
+export interface Facing {
+  h: number
+  v: number
 }
 
-// tan(22,5°): o movimento conta como diagonal quando o eixo menor tem pelo menos
-// essa fração do eixo maior (faixa de 45° em volta de cada diagonal).
-const DIAGONAL_RATIO = Math.tan(Math.PI / 8)
+export interface FacingState extends Facing {
+  pendingH: number
+  pendingV: number
+  pendingMs: number
+}
+
+export const INITIAL_FACING: FacingState = {
+  h: 0,
+  v: 1,
+  pendingH: 0,
+  pendingV: 0,
+  pendingMs: 0,
+}
 
 /**
- * Oito direções vistas de cima: frente, costas, lados e as quatro diagonais.
- * As direções para a esquerda usam o sprite da direita espelhado.
+ * Atualiza a direção a partir das teclas apertadas (inputH/inputV em -1, 0, 1).
+ * Sem tecla apertada, mantém a última direção (parado ou deslizando).
  */
-export function pickPipocaAnimation(
-  velocityX: number,
-  velocityY: number,
-): PipocaAnimation {
-  if (Math.hypot(velocityX, velocityY) < IDLE_SPEED) {
-    return { key: 'pipoca-idle', flipX: false }
+export function updateFacing(
+  state: FacingState,
+  inputH: number,
+  inputV: number,
+  deltaMs: number,
+): FacingState {
+  const settled = (h: number, v: number): FacingState => ({
+    h,
+    v,
+    pendingH: 0,
+    pendingV: 0,
+    pendingMs: 0,
+  })
+
+  if (inputH === 0 && inputV === 0) {
+    return settled(state.h, state.v)
   }
 
-  const absX = Math.abs(velocityX)
-  const absY = Math.abs(velocityY)
-  const flipX = velocityX < 0
+  if (inputH === state.h && inputV === state.v) {
+    return settled(state.h, state.v)
+  }
 
-  if (Math.min(absX, absY) >= Math.max(absX, absY) * DIAGONAL_RATIO) {
+  const wasDiagonal = state.h !== 0 && state.v !== 0
+  const isPartOfDiagonal =
+    (inputH === 0 && inputV === state.v) || (inputV === 0 && inputH === state.h)
+
+  if (!wasDiagonal || !isPartOfDiagonal) {
+    return settled(inputH, inputV)
+  }
+
+  const samePending = inputH === state.pendingH && inputV === state.pendingV
+  const pendingMs = (samePending ? state.pendingMs : 0) + deltaMs
+
+  if (pendingMs >= RELEASE_GRACE_MS) {
+    return settled(inputH, inputV)
+  }
+
+  return { ...state, pendingH: inputH, pendingV: inputV, pendingMs }
+}
+
+/** Animação de andar para uma direção (as da esquerda são as da direita espelhadas). */
+export function animationForFacing(facing: Facing): {
+  key: string
+  flipX: boolean
+} {
+  const flipX = facing.h < 0
+
+  if (facing.h !== 0 && facing.v !== 0) {
     return {
-      key: velocityY > 0 ? 'pipoca-walk-diag-down' : 'pipoca-walk-diag-up',
+      key: facing.v > 0 ? 'pipoca-walk-diag-down' : 'pipoca-walk-diag-up',
       flipX,
     }
   }
 
-  if (absX >= absY) {
+  if (facing.h !== 0) {
     return { key: 'pipoca-walk-side', flipX }
   }
 
   return {
-    key: velocityY > 0 ? 'pipoca-walk-down' : 'pipoca-walk-up',
+    key: facing.v < 0 ? 'pipoca-walk-up' : 'pipoca-walk-down',
     flipX: false,
   }
+}
+
+/** Frame de pernas paradas (o segundo da passada) de uma animação de andar. */
+export function standingFrame(key: string): number {
+  const definition = PIPOCA_ANIMATIONS.find(
+    (animation) => animation.key === key,
+  )
+
+  if (!definition) {
+    throw new Error(`animação desconhecida: ${key}`)
+  }
+
+  return definition.start + 1
 }
 
 export function estouroAnimationFor(state: HunterState): string {
