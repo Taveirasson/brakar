@@ -89,9 +89,10 @@ export class Hunter {
     let remaining = (this.currentSpeed() * deltaMs) / 1000
 
     if (this.brain.shouldChaseDirectly(this.currentCell, playerCell)) {
-      // Jogador na mesma célula: vai direto até ele. O caçador está sempre dentro
-      // da célula atual ou no corredor aberto para a próxima, então a linha reta
-      // até o jogador não atravessa paredes.
+      // Jogador na mesma célula: vai direto até ele. Com passo de 3 tiles, a área
+      // da célula inclui os tiles de abertura (topo e esquerda) e a árvore do
+      // canto, então a linha reta pode visualmente roçar essa árvore. O caçador
+      // não tem física e a captura não é afetada.
       this.moveToward(playerPosition, remaining)
       return
     }

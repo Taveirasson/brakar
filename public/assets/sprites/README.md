@@ -8,18 +8,18 @@ Ainda não estão ligados ao jogo (Spec 2).
 
 Vira-lata preto e branco. Corpo visível cabe em ~20x20 px no centro do frame.
 
-| Linha | Animação    | Frames | fps sugerido | Observação                                  |
-| ----- | ----------- | ------ | ------------ | ------------------------------------------- |
-| 0     | `walk-down` | 4      | 8            | de frente                                   |
-| 1     | `walk-up`   | 4      | 8            | de costas                                   |
-| 2     | `walk-side` | 4      | 8            | olhando para a direita (espelhar p/ esquerda) |
+| Linha | Animação    | Frames | fps sugerido | Observação                                              |
+| ----- | ----------- | ------ | ------------ | ------------------------------------------------------- |
+| 0     | `walk-down` | 4      | 8            | de frente                                               |
+| 1     | `walk-up`   | 4      | 8            | de costas                                               |
+| 2     | `walk-side` | 4      | 8            | olhando para a direita (espelhar p/ esquerda)           |
 | 3     | `idle`      | 2      | 3            | olhando para baixo, rabo abanando; colunas 2 e 3 vazias |
 
 ## estouro.png (128x64)
 
 Criatura de pólvora, papel queimado e faíscas. Corpo cabe em ~22x22 px (faíscas podem sair um pouco).
 
-| Linha | Animação | Frames | fps sugerido | Observação                               |
-| ----- | -------- | ------ | ------------ | ---------------------------------------- |
-| 0     | `move`   | 4      | 10           | crepitando, faíscas mudam a cada frame   |
-| 1     | `hunt`   | 4      | 14           | mais faíscas e olhos mais brilhantes     |
+| Linha | Animação | Frames | fps sugerido | Observação                             |
+| ----- | -------- | ------ | ------------ | -------------------------------------- |
+| 0     | `move`   | 4      | 10           | crepitando, faíscas mudam a cada frame |
+| 1     | `hunt`   | 4      | 14           | mais faíscas e olhos mais brilhantes   |

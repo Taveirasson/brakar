@@ -42,6 +42,24 @@ export function buildTileGrid(maze: MazeCell[][]): TileType[][] {
   return grid
 }
 
+/** Verdadeiro se o tile está no interior 2×2 da célula (sem as aberturas). */
+export function isCellInterior(
+  tileRow: number,
+  tileColumn: number,
+  cell: CellPosition,
+): boolean {
+  const tilesPerCell = CELL_PITCH / TILE_SIZE
+  const firstRow = tilesPerCell * cell.row + 1
+  const firstColumn = tilesPerCell * cell.column + 1
+
+  return (
+    tileRow >= firstRow &&
+    tileRow <= firstRow + 1 &&
+    tileColumn >= firstColumn &&
+    tileColumn <= firstColumn + 1
+  )
+}
+
 export function cellCenter(cell: CellPosition): Point {
   return {
     x: cell.column * CELL_PITCH + (CELL_PITCH / 3) * 2,

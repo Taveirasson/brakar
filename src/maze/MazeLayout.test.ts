@@ -4,6 +4,7 @@ import {
   buildTileGrid,
   cellAt,
   cellCenter,
+  isCellInterior,
   wallSegmentsFromGrid,
   worldSize,
 } from './MazeLayout'
@@ -117,5 +118,22 @@ describe('wallSegmentsFromGrid', () => {
         [T, T],
       ]),
     ).toEqual([])
+  })
+})
+
+describe('isCellInterior', () => {
+  const cell = { row: 1, column: 2 }
+
+  it('é verdadeiro para os 4 tiles do interior 2×2 da célula', () => {
+    expect(isCellInterior(4, 7, cell)).toBe(true)
+    expect(isCellInterior(4, 8, cell)).toBe(true)
+    expect(isCellInterior(5, 7, cell)).toBe(true)
+    expect(isCellInterior(5, 8, cell)).toBe(true)
+  })
+
+  it('é falso para as aberturas e para tiles fora da célula', () => {
+    expect(isCellInterior(3, 7, cell)).toBe(false)
+    expect(isCellInterior(4, 6, cell)).toBe(false)
+    expect(isCellInterior(6, 7, cell)).toBe(false)
   })
 })

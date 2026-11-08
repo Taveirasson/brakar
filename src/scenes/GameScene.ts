@@ -11,6 +11,7 @@ import {
   buildTileGrid,
   cellAt,
   cellCenter,
+  isCellInterior,
   wallSegmentsFromGrid,
   worldSize,
 } from '../maze/MazeLayout'
@@ -45,6 +46,8 @@ const CATCH_DISTANCE = (PLAYER_SIZE + HUNTER_SIZE) / 2
 const CATCH_EFFECT_MS = 400
 
 const FLASHLIGHT_RADIUS = 200 * MOVEMENT_SCALE
+// Folga (px) além do ponto de impacto para a copa da árvore ficar iluminada.
+const FLASHLIGHT_CANOPY_BLEED = 8
 const FLASHLIGHT_INNER_ANGLE = 30
 const FLASHLIGHT_OUTER_ANGLE = 100
 const FLASHLIGHT_COLOR = 0xffe6b3
@@ -232,11 +235,7 @@ export class GameScene extends Phaser.Scene {
 
     for (let row = 0; row < size; row++) {
       for (let column = 0; column < size; column++) {
-        const isClearing =
-          row >= 3 * exitCell.row + 1 &&
-          row <= 3 * exitCell.row + 2 &&
-          column >= 3 * exitCell.column + 1 &&
-          column <= 3 * exitCell.column + 2
+        const isClearing = isCellInterior(row, column, exitCell)
 
         ground.putTileAt(
           tileFrameFor('path', row, column, isClearing),
@@ -679,7 +678,16 @@ export class GameScene extends Phaser.Scene {
       this.wallSegments,
     )
 
-    return new Phaser.Math.Vector2(hit.x, hit.y)
+    // O raio para exatamente na face da árvore, deixando o tile voltado para o
+    // jogador fora do polígono de luz. Avança um pouco além do ponto de impacto
+    // (só quando acertou parede) para a copa ficar iluminada.
+    const distance = Math.hypot(hit.x - this.player.x, hit.y - this.player.y)
+    const bleed = distance < FLASHLIGHT_RADIUS ? FLASHLIGHT_CANOPY_BLEED : 0
+
+    return new Phaser.Math.Vector2(
+      hit.x + Math.cos(angle) * bleed,
+      hit.y + Math.sin(angle) * bleed,
+    )
   }
 
   private createVisibilityMask(): void {
