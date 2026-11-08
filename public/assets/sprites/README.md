@@ -2,7 +2,7 @@
 
 Spritesheets de frames 32x32 px, fundo transparente. Cada animação é uma linha; os frames vão da esquerda para a direita. A largura é sempre 128 px (4 colunas). Use filtro Nearest e sem compressão. Luz vem do canto superior esquerdo.
 
-Ainda não estão ligados ao jogo (Spec 2).
+Ligados ao jogo em `src/characters/` (jogador = Pipoca, caçador = Estouro).
 
 ## pipoca.png (128x128)
 

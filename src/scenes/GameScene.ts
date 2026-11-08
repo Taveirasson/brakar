@@ -35,6 +35,15 @@ import {
   HUNTER_SIZE,
   type HunterSettings,
 } from '../hunter/hunterSettings'
+import {
+  PIPOCA_ANIMATIONS,
+  PIPOCA_TEXTURE,
+  pickPipocaAnimation,
+} from '../characters/characterAnimationRules'
+import {
+  ensureAnimations,
+  loadCharacterSprites,
+} from '../characters/characterAnimations'
 
 const PLAYER_SIZE = 16
 const PLAYER_SPEED = 110 * MOVEMENT_SCALE
@@ -92,6 +101,7 @@ export class GameScene extends Phaser.Scene {
   private visibilityMaskCreated = false
 
   private player!: Phaser.Physics.Arcade.Sprite
+  private usePipocaSprite = false
   private exit!: Phaser.Physics.Arcade.Image
   private flashlight?: Phaser.GameObjects.Light
 
@@ -122,6 +132,7 @@ export class GameScene extends Phaser.Scene {
       frameWidth: TILE_SIZE,
       frameHeight: TILE_SIZE,
     })
+    loadCharacterSprites(this)
   }
 
   create(): void {
@@ -155,6 +166,7 @@ export class GameScene extends Phaser.Scene {
 
   update(_time: number, delta: number): void {
     this.updatePlayerMovement()
+    this.updatePlayerAnimation()
     this.updateHunter(delta)
 
     if (Phaser.Input.Keyboard.JustDown(this.flashlightToggleKey)) {
@@ -410,16 +422,25 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createPlayer(): void {
-    this.createSquareTexture('player', PLAYER_SIZE, PLAYER_COLOR)
+    this.usePipocaSprite = ensureAnimations(
+      this,
+      PIPOCA_TEXTURE,
+      PIPOCA_ANIMATIONS,
+    )
+
+    if (!this.usePipocaSprite) {
+      this.createSquareTexture('player', PLAYER_SIZE, PLAYER_COLOR)
+    }
 
     const startPosition = this.getCellCenter(0, 0)
 
     this.player = this.physics.add.sprite(
       startPosition.x,
       startPosition.y,
-      'player',
+      this.usePipocaSprite ? PIPOCA_TEXTURE : 'player',
     )
 
+    // O frame do Pipoca tem 32 px, mas a hitbox continua do tamanho de antes (centralizada).
     this.player.setBodySize(PLAYER_SIZE - 2, PLAYER_SIZE - 2)
 
     this.player.setCollideWorldBounds(true)
@@ -501,6 +522,19 @@ export class GameScene extends Phaser.Scene {
     camera.setZoom(4)
 
     camera.startFollow(this.player, true, 1, 1)
+  }
+
+  private updatePlayerAnimation(): void {
+    const body = this.player.body
+
+    if (!this.usePipocaSprite || !body) {
+      return
+    }
+
+    const animation = pickPipocaAnimation(body.velocity.x, body.velocity.y)
+
+    this.player.setFlipX(animation.flipX)
+    this.player.anims.play(animation.key, true)
   }
 
   private updatePlayerMovement(): void {

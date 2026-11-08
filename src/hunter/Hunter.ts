@@ -5,6 +5,12 @@ import type { Point } from '../vision/lineOfSight'
 import { cellCenter } from '../maze/MazeLayout'
 import { HunterBrain, type HunterState } from './HunterBrain'
 import { HUNTER_SIZE, type HunterSettings } from './hunterSettings'
+import {
+  ESTOURO_ANIMATIONS,
+  ESTOURO_TEXTURE,
+  estouroAnimationFor,
+} from '../characters/characterAnimationRules'
+import { ensureAnimations } from '../characters/characterAnimations'
 
 const HUNTER_TEXTURE = 'hunter'
 const HUNTER_BODY_COLOR = 0x1a0f1f
@@ -36,7 +42,8 @@ function createHunterTexture(scene: Phaser.Scene): void {
 
 export class Hunter {
   private readonly brain: HunterBrain
-  private readonly sprite: Phaser.GameObjects.Image
+  private readonly sprite: Phaser.GameObjects.Sprite
+  private readonly useEstouroSprite: boolean
   private currentCell: CellPosition
   private targetCell: CellPosition
 
@@ -46,14 +53,26 @@ export class Hunter {
     startCell: CellPosition,
     private readonly settings: HunterSettings,
   ) {
-    createHunterTexture(scene)
+    this.useEstouroSprite = ensureAnimations(
+      scene,
+      ESTOURO_TEXTURE,
+      ESTOURO_ANIMATIONS,
+    )
+
+    if (!this.useEstouroSprite) {
+      createHunterTexture(scene)
+    }
 
     this.brain = new HunterBrain(maze)
     this.currentCell = startCell
 
     const start = cellCenter(startCell)
 
-    this.sprite = scene.add.image(start.x, start.y, HUNTER_TEXTURE)
+    this.sprite = scene.add.sprite(
+      start.x,
+      start.y,
+      this.useEstouroSprite ? ESTOURO_TEXTURE : HUNTER_TEXTURE,
+    )
     this.sprite.setLighting(true)
     this.sprite.setDepth(9)
 
@@ -69,7 +88,7 @@ export class Hunter {
   }
 
   /** O objeto de cena, para que outras câmeras (como o minimapa) possam ignorá-lo. */
-  get gameObject(): Phaser.GameObjects.Image {
+  get gameObject(): Phaser.GameObjects.Sprite {
     return this.sprite
   }
 
@@ -85,6 +104,10 @@ export class Hunter {
       playerCell,
       perceivesPlayer,
     })
+
+    if (this.useEstouroSprite) {
+      this.sprite.anims.play(estouroAnimationFor(this.brain.state), true)
+    }
 
     let remaining = (this.currentSpeed() * deltaMs) / 1000
 
