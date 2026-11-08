@@ -1,4 +1,4 @@
-import type { Point } from '../vision/lineOfSight'
+import type { Point, Segment } from '../vision/lineOfSight'
 import type { MazeCell } from './MazeGenerator'
 import type { CellPosition } from './MazePathFinder'
 
@@ -58,4 +58,52 @@ export function cellAt(point: Point, mazeSize: number): CellPosition {
 
 export function worldSize(mazeSize: number): number {
   return (3 * mazeSize + 1) * TILE_SIZE
+}
+
+// Segmentos (em px) nas fronteiras árvore/trilha, unindo trechos contínuos.
+// Horizontais (de cima para baixo) primeiro, depois verticais (da esquerda
+// para a direita). Fora da grade conta como árvore.
+export function wallSegmentsFromGrid(grid: TileType[][]): Segment[] {
+  const rows = grid.length
+  const columns = grid[0]?.length ?? 0
+  const at = (row: number, column: number): TileType =>
+    grid[row]?.[column] ?? 'tree'
+  const horizontal: Segment[] = []
+  const vertical: Segment[] = []
+
+  for (let r = 0; r <= rows; r++) {
+    let start = -1
+    for (let c = 0; c <= columns; c++) {
+      const marked = c < columns && at(r - 1, c) !== at(r, c)
+      if (marked && start < 0) start = c
+      if (!marked && start >= 0) {
+        horizontal.push({
+          x1: start * TILE_SIZE,
+          y1: r * TILE_SIZE,
+          x2: c * TILE_SIZE,
+          y2: r * TILE_SIZE,
+        })
+        start = -1
+      }
+    }
+  }
+
+  for (let c = 0; c <= columns; c++) {
+    let start = -1
+    for (let r = 0; r <= rows; r++) {
+      const marked = r < rows && at(r, c - 1) !== at(r, c)
+      if (marked && start < 0) start = r
+      if (!marked && start >= 0) {
+        vertical.push({
+          x1: c * TILE_SIZE,
+          y1: start * TILE_SIZE,
+          x2: c * TILE_SIZE,
+          y2: r * TILE_SIZE,
+        })
+        start = -1
+      }
+    }
+  }
+
+  return [...horizontal, ...vertical]
 }

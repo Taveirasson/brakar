@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { buildTileGrid, cellAt, cellCenter, worldSize } from './MazeLayout'
+import type { Segment } from '../vision/lineOfSight'
+import {
+  buildTileGrid,
+  cellAt,
+  cellCenter,
+  wallSegmentsFromGrid,
+  worldSize,
+} from './MazeLayout'
 import { buildMaze, SERPENTINE_MAZE } from './testMaze'
 
 describe('buildTileGrid', () => {
@@ -73,5 +80,42 @@ describe('worldSize', () => {
     expect(worldSize(8)).toBe(800)
     expect(worldSize(10)).toBe(992)
     expect(worldSize(20)).toBe(1952)
+  })
+})
+
+describe('wallSegmentsFromGrid', () => {
+  const P = 'path',
+    T = 'tree'
+  const len = (s: Segment) => Math.hypot(s.x2 - s.x1, s.y2 - s.y1)
+
+  it('árvore isolada no meio de uma clareira murada', () => {
+    const segments = wallSegmentsFromGrid([
+      [T, T, T, T, T],
+      [T, P, P, P, T],
+      [T, P, T, P, T],
+      [T, P, P, P, T],
+      [T, T, T, T, T],
+    ])
+    // horizontais y=32,64,96,128 e depois verticais x=32,64,96,128
+    expect(segments.map(len)).toEqual([96, 32, 32, 96, 96, 32, 32, 96])
+    expect(segments[1]).toEqual({ x1: 64, y1: 64, x2: 96, y2: 64 })
+  })
+
+  it('corredor gera segmentos unidos, não um por tile', () => {
+    const segments = wallSegmentsFromGrid([
+      [T, T, T, T, T, T],
+      [T, P, P, P, P, T],
+      [T, T, T, T, T, T],
+    ])
+    expect(segments.map(len)).toEqual([128, 128, 32, 32])
+  })
+
+  it('grade só de árvore não gera segmentos', () => {
+    expect(
+      wallSegmentsFromGrid([
+        [T, T],
+        [T, T],
+      ]),
+    ).toEqual([])
   })
 })
