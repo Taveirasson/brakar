@@ -19,6 +19,9 @@ import {
   FALLBACK_FRAME_COLORS,
   FOREST_FRAME_COUNT,
   FOREST_TEXTURE,
+  TILESET_COLUMNS,
+  exposedSides,
+  groundFrameFor,
   tileFrameFor,
 } from '../maze/forestTileset'
 import { SCENE_KEYS } from '../config/sceneKeys'
@@ -218,25 +221,40 @@ export class GameScene extends Phaser.Scene {
       return
     }
 
-    // Falha ao carregar o tileset: pinta cada frame com uma cor sólida.
+    // Falha ao carregar o tileset: pinta cada frame com uma cor sólida, na
+    // mesma grade de colunas do tileset de verdade.
+    const columns = TILESET_COLUMNS
+    const rows = Math.ceil(FOREST_FRAME_COUNT / columns)
     const graphics = this.make.graphics({ x: 0, y: 0 })
 
     FALLBACK_FRAME_COLORS.forEach((color, index) => {
       graphics.fillStyle(color, 1)
-      graphics.fillRect(index * TILE_SIZE, 0, TILE_SIZE, TILE_SIZE)
+      graphics.fillRect(
+        (index % columns) * TILE_SIZE,
+        Math.floor(index / columns) * TILE_SIZE,
+        TILE_SIZE,
+        TILE_SIZE,
+      )
     })
 
     graphics.generateTexture(
       FOREST_TEXTURE,
-      FOREST_FRAME_COUNT * TILE_SIZE,
-      TILE_SIZE,
+      columns * TILE_SIZE,
+      rows * TILE_SIZE,
     )
     graphics.destroy()
 
     const texture = this.textures.get(FOREST_TEXTURE)
 
     for (let index = 0; index < FOREST_FRAME_COUNT; index++) {
-      texture.add(index, 0, index * TILE_SIZE, 0, TILE_SIZE, TILE_SIZE)
+      texture.add(
+        index,
+        0,
+        (index % columns) * TILE_SIZE,
+        Math.floor(index / columns) * TILE_SIZE,
+        TILE_SIZE,
+        TILE_SIZE,
+      )
     }
   }
 
@@ -271,15 +289,22 @@ export class GameScene extends Phaser.Scene {
     for (let row = 0; row < size; row++) {
       for (let column = 0; column < size; column++) {
         const isClearing = isCellInterior(row, column, exitCell)
+        const isTree = grid[row][column] === 'tree'
 
+        // o chão aparece entre as copas, com a sombra das árvores por cima
         ground.putTileAt(
-          tileFrameFor('path', row, column, isClearing),
+          groundFrameFor(isTree, row, column, isClearing),
           column,
           row,
         )
 
-        if (grid[row][column] === 'tree') {
-          trees.putTileAt(tileFrameFor('tree', row, column, false), column, row)
+        if (isTree) {
+          const exposed = exposedSides(grid, row, column)
+          trees.putTileAt(
+            tileFrameFor('tree', row, column, false, exposed),
+            column,
+            row,
+          )
         }
       }
     }

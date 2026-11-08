@@ -2,7 +2,11 @@ import Phaser from 'phaser'
 import { SCENE_KEYS } from '../config/sceneKeys'
 import { createTextButton } from '../ui/createTextButton'
 import { addText, THEME } from '../ui/theme'
-import { FOREST_TEXTURE, tileFrameFor } from '../maze/forestTileset'
+import {
+  FOREST_TEXTURE,
+  groundFrameFor,
+  tileFrameFor,
+} from '../maze/forestTileset'
 import { TILE_SIZE } from '../maze/MazeLayout'
 import {
   PIPOCA_ANIMATIONS,
@@ -80,15 +84,40 @@ export class MenuScene extends Phaser.Scene {
     if (this.textures.exists(FOREST_TEXTURE)) {
       const size = TILE_SIZE * 2
 
-      for (let row = 0; row * size < height + size; row++) {
-        for (let column = 0; column * size < width + size; column++) {
-          const frame = tileFrameFor('tree', row, column, false)
+      const rows = Math.ceil(height / size) + 1
+      const columns = Math.ceil(width / size) + 1
 
+      for (let row = 0; row < rows; row++) {
+        for (let column = 0; column < columns; column++) {
           this.add
-            .image(column * size, row * size, FOREST_TEXTURE, frame)
+            .image(
+              column * size,
+              row * size,
+              FOREST_TEXTURE,
+              groundFrameFor(true, row, column, false),
+            )
             .setOrigin(0)
             .setScale(2)
             .setTint(0x3a4a3e)
+        }
+      }
+
+      // duas camadas de copas, a segunda deslocada meio tile, para cobrir os
+      // vãos entre as árvores e não formar uma grade regular
+      for (const offset of [0, size / 2]) {
+        for (let row = -1; row < rows; row++) {
+          for (let column = -1; column < columns; column++) {
+            this.add
+              .image(
+                column * size + offset,
+                row * size + offset,
+                FOREST_TEXTURE,
+                tileFrameFor('tree', row + offset, column, false),
+              )
+              .setOrigin(0)
+              .setScale(2)
+              .setTint(0x3a4a3e)
+          }
         }
       }
     }
