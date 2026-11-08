@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "vitest run"
+    "test": "node scripts/run-vitest.mjs run"
   },
   "devDependencies": {
     "typescript": "~6.0.2",
