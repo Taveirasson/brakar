@@ -275,7 +275,7 @@ git commit -m "feat: adiciona segmentos de luz e mapeamento do tileset da flores
 
 ### Task 4: Floresta no jogo
 
-> Resultado da prova (Task 1): _preencher_
+> Resultado da prova (Task 1): **tilemap OK** — `TilemapLayerBase` do Phaser 4.2.1 inclui `Components.Lighting`; a máscara de `camera.filters` vale para tudo que a câmera desenha. Confirmação visual no playtest do Step 5.
 
 **Files:**
 - Modify: `src/scenes/GameScene.ts`
@@ -330,4 +330,41 @@ Expected: todos os testes passam; `tsc` sem erros; build gera `dist/` com `asset
 npm run format
 git add src/scenes/GameScene.ts src/hunter/Hunter.ts src/hunter/hunterSettings.ts public/assets/tiles/forest.png
 git commit -m "feat: troca as paredes do labirinto por uma floresta em tilemap"
+```
+
+---
+
+### Task 5: Sprites dos personagens (só assets, sem integração)
+
+Pedido do Lucas na execução: deixar prontos os sprites da Spec 2. **Esta task não muda código do jogo**; ligar os sprites ao jogador e ao caçador é trabalho da Spec 2.
+
+**Files:**
+- Create: `public/assets/sprites/pipoca.png`
+- Create: `public/assets/sprites/estouro.png`
+- Create: `public/assets/sprites/README.md`
+
+**Interfaces:**
+- Produces: spritesheets de frames 32×32, uma linha por animação, layout documentado em `public/assets/sprites/README.md` (nome da animação → linha, quantidade de frames, fps sugerido).
+
+- [ ] **Step 1: Pipoca** — use a skill `pixel-art-sprites-32`. Vira-lata **preto e branco** visto de cima em 3/4 (top-down), corpo preto, **peito, focinho e ponta do rabo brancos**, orelhas caídas, porte pequeno e fofo; contorno escuro que ainda se destaque sobre trilha de terra escura. Animações, uma por linha:
+  1. `walk-down` — 4 frames
+  2. `walk-up` — 4 frames
+  3. `walk-side` — 4 frames, olhando para a direita (a esquerda é espelhada no jogo)
+  4. `idle` — 2 frames, olhando para baixo, rabo abanando
+  O corpo visível deve caber em ~20×20 px no centro do frame (a hitbox do jogo é 16 px).
+
+- [ ] **Step 2: Estouro** — mesma skill. Criatura de **pólvora, papel queimado e faíscas** nascida de um balão junino: massa escura irregular, rasgos de papel colorido (vermelho, amarelo, azul desbotados), **faíscas laranja-amarelas** saindo do corpo e dois olhos brilhantes. Animações:
+  1. `move` — 4 frames, crepitando (faíscas mudam de lugar a cada frame)
+  2. `hunt` — 4 frames, mais faíscas e brilho mais intenso
+  O corpo deve caber em ~22×22 px (`HUNTER_SIZE = 18`).
+
+- [ ] **Step 3: Conferir** — abra os dois PNGs ampliados e confira: fundo transparente, frames alinhados na grade de 32 px, manchas brancas do Pipoca legíveis, silhueta do Estouro reconhecível no escuro.
+
+- [ ] **Step 4: README e commit**
+
+Escreva `public/assets/sprites/README.md` com o layout de cada spritesheet.
+
+```bash
+git add public/assets/sprites
+git commit -m "feat: adiciona sprites do Pipoca e do Estouro"
 ```
