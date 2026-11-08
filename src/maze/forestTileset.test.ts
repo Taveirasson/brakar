@@ -33,4 +33,18 @@ describe('forestTileset', () => {
   it('há uma cor de fallback por frame', () => {
     expect(FALLBACK_FRAME_COLORS).toHaveLength(FOREST_FRAME_COUNT)
   })
+
+  it('pickTileVariant com 2 variantes não vira xadrez', () => {
+    let checker = true
+    const counts = [0, 0]
+    for (let r = 0; r < 20; r++)
+      for (let c = 0; c < 20; c++) {
+        const v = pickTileVariant(r, c, 2)
+        counts[v]++
+        if (v !== (r + c) % 2) checker = false
+      }
+    expect(checker).toBe(false)
+    expect(counts[0]).toBeGreaterThanOrEqual(120)
+    expect(counts[1]).toBeGreaterThanOrEqual(120)
+  })
 })

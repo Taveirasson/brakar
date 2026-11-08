@@ -25,9 +25,14 @@ export function pickTileVariant(
   column: number,
   count: number,
 ): number {
-  return (
-    ((Math.imul(row, 73856093) ^ Math.imul(column, 19349663)) >>> 0) % count
-  )
+  let hash = Math.imul(row, 73856093) ^ Math.imul(column, 19349663)
+  // Mistura final: sem ela os bits baixos dependem só dos bits baixos de
+  // linha/coluna e a variação vira padrão regular (xadrez com count = 2).
+  hash ^= hash >>> 15
+  hash = Math.imul(hash, 0x2c1b3c6d)
+  hash ^= hash >>> 12
+  hash ^= hash >>> 16
+  return (hash >>> 0) % count
 }
 
 export function tileFrameFor(
