@@ -567,11 +567,7 @@ export class GameScene extends Phaser.Scene {
       return
     }
 
-    const animation = pickPipocaAnimation(
-      body.velocity.x,
-      body.velocity.y,
-      this.player.flipX,
-    )
+    const animation = pickPipocaAnimation(body.velocity.x, body.velocity.y)
 
     this.player.setFlipX(animation.flipX)
     this.player.anims.play(animation.key, true)

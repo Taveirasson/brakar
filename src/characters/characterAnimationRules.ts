@@ -17,6 +17,8 @@ export const PIPOCA_ANIMATIONS: AnimationDefinition[] = [
   { key: 'pipoca-walk-up', start: 4, end: 7, frameRate: 8 },
   { key: 'pipoca-walk-side', start: 8, end: 11, frameRate: 8 },
   { key: 'pipoca-idle', start: 12, end: 13, frameRate: 3 },
+  { key: 'pipoca-walk-diag-down', start: 16, end: 19, frameRate: 8 },
+  { key: 'pipoca-walk-diag-up', start: 20, end: 23, frameRate: 8 },
 ]
 
 export const ESTOURO_ANIMATIONS: AnimationDefinition[] = [
@@ -32,25 +34,41 @@ export interface PipocaAnimation {
   flipX: boolean
 }
 
-// Movimento horizontal abaixo disso não muda o lado para onde o Pipoca olha.
-const TURN_SPEED = 1
+// tan(22,5°): o movimento conta como diagonal quando o eixo menor tem pelo menos
+// essa fração do eixo maior (faixa de 45° em volta de cada diagonal).
+const DIAGONAL_RATIO = Math.tan(Math.PI / 8)
 
 /**
- * O Pipoca sempre aparece na horizontal (visto de cima, olhando para um lado).
- * Andando para cima ou para baixo, ele continua virado para o último lado.
+ * Oito direções vistas de cima: frente, costas, lados e as quatro diagonais.
+ * As direções para a esquerda usam o sprite da direita espelhado.
  */
 export function pickPipocaAnimation(
   velocityX: number,
   velocityY: number,
-  facingLeft: boolean,
 ): PipocaAnimation {
-  const flipX = Math.abs(velocityX) >= TURN_SPEED ? velocityX < 0 : facingLeft
-
   if (Math.hypot(velocityX, velocityY) < IDLE_SPEED) {
-    return { key: 'pipoca-idle', flipX: facingLeft }
+    return { key: 'pipoca-idle', flipX: false }
   }
 
-  return { key: 'pipoca-walk-side', flipX }
+  const absX = Math.abs(velocityX)
+  const absY = Math.abs(velocityY)
+  const flipX = velocityX < 0
+
+  if (Math.min(absX, absY) >= Math.max(absX, absY) * DIAGONAL_RATIO) {
+    return {
+      key: velocityY > 0 ? 'pipoca-walk-diag-down' : 'pipoca-walk-diag-up',
+      flipX,
+    }
+  }
+
+  if (absX >= absY) {
+    return { key: 'pipoca-walk-side', flipX }
+  }
+
+  return {
+    key: velocityY > 0 ? 'pipoca-walk-down' : 'pipoca-walk-up',
+    flipX: false,
+  }
 }
 
 export function estouroAnimationFor(state: HunterState): string {

@@ -7,51 +7,63 @@ import {
 } from './characterAnimationRules'
 
 describe('pickPipocaAnimation', () => {
-  it('parado usa idle horizontal e mantém o lado em que estava', () => {
-    expect(pickPipocaAnimation(0, 0, false)).toEqual({
+  it('parado usa idle sem espelhar', () => {
+    expect(pickPipocaAnimation(0, 0)).toEqual({
       key: 'pipoca-idle',
       flipX: false,
-    })
-    expect(pickPipocaAnimation(0, 0, true)).toEqual({
-      key: 'pipoca-idle',
-      flipX: true,
     })
   })
 
   it('velocidade residual do drag conta como parado', () => {
-    expect(pickPipocaAnimation(5, -4, false).key).toBe('pipoca-idle')
+    expect(pickPipocaAnimation(5, -4).key).toBe('pipoca-idle')
+  })
+
+  it('andando para baixo e para cima', () => {
+    expect(pickPipocaAnimation(0, 165)).toEqual({
+      key: 'pipoca-walk-down',
+      flipX: false,
+    })
+    expect(pickPipocaAnimation(0, -165)).toEqual({
+      key: 'pipoca-walk-up',
+      flipX: false,
+    })
   })
 
   it('andando para os lados espelha só para a esquerda', () => {
-    expect(pickPipocaAnimation(165, 0, true)).toEqual({
+    expect(pickPipocaAnimation(165, 0)).toEqual({
       key: 'pipoca-walk-side',
       flipX: false,
     })
-    expect(pickPipocaAnimation(-165, 0, false)).toEqual({
+    expect(pickPipocaAnimation(-165, 0)).toEqual({
       key: 'pipoca-walk-side',
       flipX: true,
     })
   })
 
-  it('para cima e para baixo também usa o sprite horizontal, virado para o último lado', () => {
-    expect(pickPipocaAnimation(0, 165, false)).toEqual({
-      key: 'pipoca-walk-side',
+  it('na diagonal aponta para a diagonal, espelhando para a esquerda', () => {
+    expect(pickPipocaAnimation(117, 117)).toEqual({
+      key: 'pipoca-walk-diag-down',
       flipX: false,
     })
-    expect(pickPipocaAnimation(0, -165, true)).toEqual({
-      key: 'pipoca-walk-side',
+    expect(pickPipocaAnimation(-117, 117)).toEqual({
+      key: 'pipoca-walk-diag-down',
+      flipX: true,
+    })
+    expect(pickPipocaAnimation(117, -117)).toEqual({
+      key: 'pipoca-walk-diag-up',
+      flipX: false,
+    })
+    expect(pickPipocaAnimation(-117, -117)).toEqual({
+      key: 'pipoca-walk-diag-up',
       flipX: true,
     })
   })
 
-  it('na diagonal o lado segue o movimento horizontal', () => {
-    expect(pickPipocaAnimation(-50, 120, false)).toEqual({
+  it('quase reto (fora da faixa de 22,5° da diagonal) usa a direção reta', () => {
+    expect(pickPipocaAnimation(30, 120).key).toBe('pipoca-walk-down')
+    expect(pickPipocaAnimation(-120, 30)).toEqual({
       key: 'pipoca-walk-side',
       flipX: true,
-    })
-    expect(pickPipocaAnimation(50, -120, true)).toEqual({
-      key: 'pipoca-walk-side',
-      flipX: false,
     })
   })
 })
@@ -71,6 +83,8 @@ describe('definições das animações', () => {
       { key: 'pipoca-walk-up', start: 4, end: 7, frameRate: 8 },
       { key: 'pipoca-walk-side', start: 8, end: 11, frameRate: 8 },
       { key: 'pipoca-idle', start: 12, end: 13, frameRate: 3 },
+      { key: 'pipoca-walk-diag-down', start: 16, end: 19, frameRate: 8 },
+      { key: 'pipoca-walk-diag-up', start: 20, end: 23, frameRate: 8 },
     ])
     expect(ESTOURO_ANIMATIONS).toEqual([
       { key: 'estouro-move', start: 0, end: 3, frameRate: 10 },
