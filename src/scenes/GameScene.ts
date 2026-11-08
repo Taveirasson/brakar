@@ -31,6 +31,7 @@ import { findItemCellsByQuadrant } from '../maze/MazeItemPlacement'
 import type { NotificationScene } from './NotificationScene'
 import { getSavedMazeSize } from '../config/mazeSettings'
 import { castRay, type Segment } from '../vision/lineOfSight'
+import { moonlightAt } from '../vision/moonlight'
 import { Hunter } from '../hunter/Hunter'
 import { GameEffects } from '../effects/GameEffects'
 import { canPerceivePlayer, isCaught } from '../hunter/hunterPerception'
@@ -88,10 +89,8 @@ const FLASHLIGHT_OUTER_ANGLE = 100
 const FLASHLIGHT_COLOR = 0xffe6b3
 const FLASHLIGHT_INTENSITY = 2.4
 
-const AMBIENT_LIGHT_COLOR = 0x40334f
-
-const DARK_VISIBILITY_ALPHA = 0.45
-const PLAYER_DARK_VISION_RADIUS = 28
+// Troca suave entre lanterna e luz da lua ao ligar/desligar a lanterna.
+const MOON_TRANSITION_MS = 300
 
 const FLASHLIGHT_RAY_COUNT = 181
 
@@ -135,6 +134,9 @@ export class GameScene extends Phaser.Scene {
   private flashlight?: Phaser.GameObjects.Light
 
   private flashlightEnabled = false
+  /** 0 = lanterna acesa (escuro), 1 = lanterna apagada (luz da lua). */
+  private moonLevel = 0
+  private moonTween?: Phaser.Tweens.Tween
   private flashlightToggleKey!: Phaser.Input.Keyboard.Key
 
   private cursorKeys!: Phaser.Types.Input.Keyboard.CursorKeys
@@ -176,6 +178,8 @@ export class GameScene extends Phaser.Scene {
 
     this.flashlight = undefined
     this.flashlightEnabled = false
+    this.moonLevel = 0
+    this.moonTween = undefined
     this.visibilityMask = undefined
     this.visibilityMaskCreated = false
 
@@ -927,7 +931,9 @@ export class GameScene extends Phaser.Scene {
 
     visibilityMask.clear()
 
-    visibilityMask.fillStyle(0xffffff, DARK_VISIBILITY_ALPHA)
+    const lighting = moonlightAt(this.moonLevel)
+
+    visibilityMask.fillStyle(0xffffff, lighting.worldVisibility)
 
     // cobre também a mata em volta do labirinto
     const margin = OUTER_FOREST_TILES * TILE_SIZE
@@ -938,13 +944,19 @@ export class GameScene extends Phaser.Scene {
       this.worldPixels + margin * 2,
     )
 
-    visibilityMask.fillStyle(0xffffff, 0.65)
-
-    visibilityMask.fillCircle(
-      this.player.x,
-      this.player.y,
-      PLAYER_DARK_VISION_RADIUS,
-    )
+    // visão em volta do Pipoca, com borda suave (círculos sobrepostos somam)
+    for (const [scale, alpha] of [
+      [1, 0.4],
+      [0.65, 0.5],
+      [0.35, 0.6],
+    ]) {
+      visibilityMask.fillStyle(0xffffff, alpha)
+      visibilityMask.fillCircle(
+        this.player.x,
+        this.player.y,
+        lighting.visionRadius * scale,
+      )
+    }
 
     if (!this.flashlightEnabled) {
       return
@@ -1106,11 +1118,27 @@ export class GameScene extends Phaser.Scene {
 
     this.flashlight.setIntensity(intensity)
 
+    this.fadeMoonlight(this.flashlightEnabled ? 0 : 1)
     this.updateVisibilityMask()
   }
 
+  /** Lanterna apagada acende a luz da lua (e vice-versa), com transição suave. */
+  private fadeMoonlight(target: number): void {
+    this.moonTween?.stop()
+
+    this.moonTween = this.tweens.add({
+      targets: this,
+      moonLevel: target,
+      duration: MOON_TRANSITION_MS,
+      ease: 'Sine.easeInOut',
+      onUpdate: () => {
+        this.lights.setAmbientColor(moonlightAt(this.moonLevel).ambientColor)
+      },
+    })
+  }
+
   private turnOffWorldLights(): void {
-    this.lights.setAmbientColor(AMBIENT_LIGHT_COLOR)
+    this.lights.setAmbientColor(moonlightAt(this.moonLevel).ambientColor)
 
     if (!this.visibilityMaskCreated) {
       this.createVisibilityMask()
