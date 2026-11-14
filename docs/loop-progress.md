@@ -13,7 +13,8 @@ Feito:
 10. Dicas de primeira vez: nas 2 primeiras partidas (noite 1) três avisos em sequência explicam Estouro, Shift, moitas, ossos e lama. Testado no navegador.
 11. Aviso do Estouro: '?' amarelo quando ele passa a investigar e '!' vermelho + som agudo quando passa a caçar, seguindo ele por ~1 s. Dá tempo de reagir. Testado no navegador.
 12. Labirinto com ciclos (src/maze/mazeBraiding.ts): metade dos becos ganha passagem e há ~0,8 passagens extras por linha; 4 becos restantes em 100 células (antes ~15). Rotas alternativas de fuga. Testado (visão geral no navegador).
+13. Cutscene de abertura (IntroScene): 4 cenas com a arte do menu em 'câmera lenta' (zoom/pan e cor por cena), texto digitando, Espaço/Enter/clique avança, ESC pula. Aparece no primeiro INICIAR; botão HISTÓRIA no menu revê. Testado no navegador.
 
-NOVO FOCO pedido pelo usuário: (a) paredes/labirinto com mais saídas, (b) visual: efeitos e sprites melhores, (c) história no começo (cutscene). Próximas: cutscene de abertura, depois efeitos/sprites.
+NOVO FOCO pedido pelo usuário: (a) paredes/labirinto com mais saídas, (b) visual: efeitos e sprites melhores, (c) história no começo (cutscene). Próximas: efeitos de partículas/sprites melhores (poeira, folhas, névoa, brilho do Estouro, sprites do Pipoca/Estouro).
 
 Ideias pendentes (por ordem): itens com efeito, conquistas.

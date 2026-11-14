@@ -1,6 +1,7 @@
 import Phaser from 'phaser'
 import { SCENE_KEYS } from '../config/sceneKeys'
 import { createTextButton } from '../ui/createTextButton'
+import { hasSeenIntro } from './IntroScene'
 import { resetNight } from '../run/runState'
 import { addText } from '../ui/theme'
 import {
@@ -39,7 +40,7 @@ export class MenuScene extends Phaser.Scene {
     createTextButton({
       scene: this,
       x: buttonsX,
-      y: 400,
+      y: 360,
       label: 'INICIAR',
       onClick: () => {
         this.startGame()
@@ -49,7 +50,18 @@ export class MenuScene extends Phaser.Scene {
     createTextButton({
       scene: this,
       x: buttonsX,
-      y: 462,
+      y: 420,
+      label: 'HISTÓRIA',
+      onClick: () => {
+        resetNight()
+        this.scene.start(SCENE_KEYS.intro)
+      },
+    })
+
+    createTextButton({
+      scene: this,
+      x: buttonsX,
+      y: 480,
       label: 'CONFIGURAÇÕES',
       onClick: () => {
         this.openConfigScene()
@@ -81,7 +93,8 @@ export class MenuScene extends Phaser.Scene {
 
   private startGame(): void {
     resetNight()
-    this.scene.start(SCENE_KEYS.game)
+    // a história aparece na primeira vez; depois vai direto para o jogo
+    this.scene.start(hasSeenIntro() ? SCENE_KEYS.game : SCENE_KEYS.intro)
   }
 
   private openConfigScene(): void {
