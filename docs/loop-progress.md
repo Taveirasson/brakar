@@ -76,3 +76,25 @@ Ordem planejada (marque ao concluir; cada item testado no navegador e commitado)
 9. [x] (feito: src/run/hook.ts; tempo até o 1º vagalume e resultado da 1ª partida, na tela HISTÓRICO; testado) Medir o gancho localmente (sem rede): tempo até o 1º vagalume e fugas na 1ª partida, mostrados no HISTÓRICO, para comparar antes/depois.
 
 Fontes da pesquisa: wayline.io (tutorial UX, retenção em roguelikes), game-wisdom.com (onboarding, 'frictionless hook'), finalboss.io (hook rate), gdevelop.io/blog/casual-game-loops, gameanalytics.com (appointment mechanics), gamedesignbites (retenção em baixa atenção). Todas são blogs de praticantes; números específicos citados lá não foram verificados.
+
+## FASE 4 — Polimento de UX/UI (auditoria por captura de tela em 1100x650 e celular 844x390; o jogo é 960x540 e escala FIT)
+
+Problemas achados na auditoria (screenshots em PC e celular deitado):
+- Aviso de notificação: o texto vaza para fora da caixa e cobre o HUD (bolinhas/dica de controles); o rótulo do tutorial (y=70) briga com o aviso.
+- Telas por cima do jogo (pausa, vitória, derrota) deixam o HUD e o texto do tutorial aparecendo por trás/por cima do painel.
+- Menu: linha HISTÓRIA/AJUSTES mais larga que a coluna de botões e desalinhada; painel de recordes com 6 linhas; "Ver histórico" não parece botão; missões do dia sobre o pavio da bomba, sem fundo.
+- Histórico: colunas calculadas para 1100 de largura (jogo é 960), então ficam assimétricas.
+- Vitória/derrota: linhas de estatística coladas, troféus quase encostando no botão; texto longo sem quebra.
+- Configurações: botões de larguras diferentes; Bênçãos: descrição colada no botão e a última encosta na borda do painel; Loja: "Seus ossos" colado nos rótulos.
+- Celular: textos pequenos demais (escala 0,72), botões baixos para o toque, abertura sem dica de toque.
+
+Ordem planejada (marque ao concluir; cada item conferido por captura e commitado):
+1. [ ] Notificações: caixa se ajusta ao texto (quebra de linha, largura máx.), posição que não cobre o HUD; tutorial vai para a parte de baixo.
+2. [ ] Esconder o HUD e as notificações enquanto pausa/vitória/derrota/bênção estão abertas; restaurar ao voltar.
+3. [ ] Menu: linha inferior alinhada à coluna, recordes compactos (4 linhas), "Ver histórico" como botão pequeno, missões com fundo translúcido sem cobrir a bomba.
+4. [ ] Histórico: colunas centradas em 960, espaçamento e alinhamento das listas.
+5. [ ] Vitória/derrota: ritmo vertical (estatísticas, conquistas com quebra de linha, botões), painel com folga.
+6. [ ] Configurações, Bênçãos e Loja: larguras iguais, espaçamentos e margens.
+7. [ ] Celular: fontes mínimas maiores, botões mais altos em tela de toque, dica de toque na história e nas telas.
+8. [ ] Teclado no menu: setas + Enter navegam pelos botões (foco visível), ESC volta nas subtelas.
+9. [ ] Nova rodada de captura (PC e celular) para conferir tudo e corrigir o que sobrou.
