@@ -77,7 +77,7 @@ Ordem planejada (marque ao concluir; cada item testado no navegador e commitado)
 
 Fontes da pesquisa: wayline.io (tutorial UX, retenção em roguelikes), game-wisdom.com (onboarding, 'frictionless hook'), finalboss.io (hook rate), gdevelop.io/blog/casual-game-loops, gameanalytics.com (appointment mechanics), gamedesignbites (retenção em baixa atenção). Todas são blogs de praticantes; números específicos citados lá não foram verificados.
 
-## FASE 4 — Polimento de UX/UI (auditoria por captura de tela em 1100x650 e celular 844x390; o jogo é 960x540 e escala FIT)
+## FASE 4 — Polimento de UX/UI — CONCLUÍDA (itens 1-9) (auditoria por captura de tela em 1100x650 e celular 844x390; o jogo é 960x540 e escala FIT)
 
 Problemas achados na auditoria (screenshots em PC e celular deitado):
 - Aviso de notificação: o texto vaza para fora da caixa e cobre o HUD (bolinhas/dica de controles); o rótulo do tutorial (y=70) briga com o aviso.
@@ -97,4 +97,4 @@ Ordem planejada (marque ao concluir; cada item conferido por captura e commitado
 6. [x] (feito, conferido por captura) Configurações, Bênçãos e Loja: larguras iguais, espaçamentos e margens.
 7. [x] (feito: isTouchDevice, textos +1-2 px no toque, dicas de toque nas telas de fim, botão PULAR na história; conferido por captura) Celular: fontes mínimas maiores, botões mais altos em tela de toque, dica de toque na história e nas telas.
 8. [x] (feito: ui/menuNavigation.ts; setas/WASD + Enter/Espaço no menu, ajustes, pausa e bênçãos (1-3 também), ESC volta em ajustes; testado) Teclado no menu: setas + Enter navegam pelos botões (foco visível), ESC volta nas subtelas.
-9. [ ] Nova rodada de captura (PC e celular) para conferir tudo e corrigir o que sobrou.
+9. [x] (feito: capturas finais em PC e celular de menu, ajustes, loja, histórico, bênçãos, pausa, vitória e derrota; recorde da sobrevivência destacado em dourado; ajustes com botões de 300 px) Nova rodada de captura (PC e celular) para conferir tudo e corrigir o que sobrou.

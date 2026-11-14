@@ -53,7 +53,7 @@ canvas {
 }
 .maze-dropdown {
   position: relative;
-  width: 280px;
+  width: 300px;
   font:
     20px 'Pixelify Sans',
     monospace;

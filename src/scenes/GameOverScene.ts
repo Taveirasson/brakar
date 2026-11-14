@@ -116,6 +116,7 @@ export class GameOverScene extends Phaser.Scene {
             `Recorde: noite ${this.records?.bestNight ?? this.night}`,
           ],
       'muted',
+      this.survival?.isNewBest ? THEME.title : undefined,
     )
 
     createTextButton({
