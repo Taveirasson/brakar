@@ -8,6 +8,7 @@ import { createTextButton } from '../ui/createTextButton'
 import { formatTime, type Records } from '../run/records'
 import {
   addAchievements,
+  isTouchDevice,
   addBackdrop,
   addPanel,
   addText,
@@ -145,7 +146,9 @@ export class GameOverScene extends Phaser.Scene {
         this,
         centerX,
         centerY + 200,
-        'R: tentar de novo  ·  C: copiar resultado',
+        isTouchDevice()
+          ? 'Toque aqui para copiar o resultado'
+          : 'R: tentar de novo  ·  C: copiar resultado',
         'muted',
       ),
       false,

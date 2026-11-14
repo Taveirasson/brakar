@@ -2,7 +2,7 @@ import Phaser from 'phaser'
 import { SCENE_KEYS } from '../config/sceneKeys'
 import { sfx } from '../audio/sfx'
 import { resetNight } from '../run/runState'
-import { FONT_FAMILY, THEME } from '../ui/theme'
+import { FONT_FAMILY, THEME, isTouchDevice } from '../ui/theme'
 
 const INTRO_SEEN_KEY = 'brakar-intro-seen'
 const BACKGROUND = 'menu-background'
@@ -105,21 +105,48 @@ export class IntroScene extends Phaser.Scene {
       .setOrigin(0.5)
 
     this.add
-      .text(width - 16, 12, 'ESPAÇO: avançar · ESC: pular', {
-        fontFamily: FONT_FAMILY,
-        fontSize: '14px',
-        color: THEME.muted,
-        stroke: '#050a07',
-        strokeThickness: 3,
-      })
+      .text(
+        width - 16,
+        12,
+        isTouchDevice() ? 'TOQUE: avançar' : 'ESPAÇO: avançar · ESC: pular',
+        {
+          fontFamily: FONT_FAMILY,
+          fontSize: '14px',
+          color: THEME.muted,
+          stroke: '#050a07',
+          strokeThickness: 3,
+        },
+      )
       .setOrigin(1, 0)
 
     const advance = () => this.advance()
 
+    if (isTouchDevice()) {
+      // não há ESC no celular: botão de pular no canto
+      this.add
+        .text(width - 16, this.scale.height - 14, 'PULAR ▸', {
+          fontFamily: FONT_FAMILY,
+          fontSize: '18px',
+          color: THEME.title,
+          stroke: '#050a07',
+          strokeThickness: 4,
+          padding: { x: 10, y: 8 },
+        })
+        .setOrigin(1, 1)
+        .setDepth(10)
+        .setInteractive({ useHandCursor: true })
+        .on('pointerdown', () => this.finish())
+    }
+
     this.input.keyboard?.on('keydown-SPACE', advance)
     this.input.keyboard?.on('keydown-ENTER', advance)
     this.input.keyboard?.on('keydown-ESC', () => this.finish())
-    this.input.on('pointerdown', advance)
+    this.input.on(
+      'pointerdown',
+      (_pointer: Phaser.Input.Pointer, over: unknown[]) => {
+        if (over.length === 0) advance()
+      },
+    )
 
     this.cameras.main.fadeIn(600, 0, 0, 0)
     this.showSlide()

@@ -95,6 +95,6 @@ Ordem planejada (marque ao concluir; cada item conferido por captura e commitado
 4. [x] (feito, conferido por captura) Histórico: colunas centradas em 960, espaçamento e alinhamento das listas.
 5. [x] (feito: painel 440, conquistas com quebra de linha via addAchievements; conferido por captura) Vitória/derrota: ritmo vertical (estatísticas, conquistas com quebra de linha, botões), painel com folga.
 6. [x] (feito, conferido por captura) Configurações, Bênçãos e Loja: larguras iguais, espaçamentos e margens.
-7. [ ] Celular: fontes mínimas maiores, botões mais altos em tela de toque, dica de toque na história e nas telas.
+7. [x] (feito: isTouchDevice, textos +1-2 px no toque, dicas de toque nas telas de fim, botão PULAR na história; conferido por captura) Celular: fontes mínimas maiores, botões mais altos em tela de toque, dica de toque na história e nas telas.
 8. [ ] Teclado no menu: setas + Enter navegam pelos botões (foco visível), ESC volta nas subtelas.
 9. [ ] Nova rodada de captura (PC e celular) para conferir tudo e corrigir o que sobrou.

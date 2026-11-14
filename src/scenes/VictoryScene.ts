@@ -9,6 +9,7 @@ import { createTextButton } from '../ui/createTextButton'
 import { formatTime, type Records } from '../run/records'
 import {
   addAchievements,
+  isTouchDevice,
   addBackdrop,
   addPanel,
   addText,
@@ -141,7 +142,15 @@ export class VictoryScene extends Phaser.Scene {
     this.input.keyboard?.once('keydown-SPACE', () => this.restartGame())
     this.input.keyboard?.once('keydown-ENTER', () => this.restartGame())
     this.setupShare(
-      addText(this, centerX, centerY + 200, 'C: copiar resultado', 'muted'),
+      addText(
+        this,
+        centerX,
+        centerY + 200,
+        isTouchDevice()
+          ? 'Toque aqui para copiar o resultado'
+          : 'C: copiar resultado',
+        'muted',
+      ),
       true,
     )
 

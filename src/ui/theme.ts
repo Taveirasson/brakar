@@ -20,11 +20,26 @@ export const THEME = {
 
 type TextKind = 'title' | 'heading' | 'body' | 'muted'
 
+/** Celular/tablet: a tela escala para baixo (FIT), então os textos ganham 1-2 px. */
+export function isTouchDevice(): boolean {
+  return (
+    typeof navigator !== 'undefined' &&
+    (navigator.maxTouchPoints > 0 || 'ontouchstart' in window)
+  )
+}
+
 const TEXT_SIZES: Record<TextKind, string> = {
   title: '56px',
   heading: '38px',
   body: '18px',
   muted: '15px',
+}
+
+const TOUCH_TEXT_SIZES: Record<TextKind, string> = {
+  title: '56px',
+  heading: '38px',
+  body: '20px',
+  muted: '17px',
 }
 
 export function textStyle(
@@ -35,7 +50,7 @@ export function textStyle(
 
   return {
     fontFamily: FONT_FAMILY,
-    fontSize: TEXT_SIZES[kind],
+    fontSize: (isTouchDevice() ? TOUCH_TEXT_SIZES : TEXT_SIZES)[kind],
     color:
       color ??
       (isTitle ? THEME.title : kind === 'muted' ? THEME.muted : THEME.text),
