@@ -32,7 +32,11 @@ import {
 } from '../maze/forestTileset'
 import { SCENE_KEYS } from '../config/sceneKeys'
 import type { GamePhase } from '../config'
-import { findItemCellsByQuadrant } from '../maze/MazeItemPlacement'
+import {
+  findItemCellsByQuadrant,
+  findNearStartCell,
+  pathDistances,
+} from '../maze/MazeItemPlacement'
 import type { HudScene } from './HudScene'
 import type { NotificationScene } from './NotificationScene'
 import { getSavedMazeSize } from '../config/mazeSettings'
@@ -154,6 +158,7 @@ const HIDING_SPOTS_PER_CELL_ROW = 0.6
 const BUSH_SCALE = 1.25
 const POWER_UPS_PER_CELL_ROW = 0.3
 const OPENING_MS = 3200
+const NEAR_FIREFLY_MAX_STEPS = 5
 const DAILY_MAZE_SIZE = 10
 const SURVIVAL_MAZE_SIZE = 8
 
@@ -2099,6 +2104,8 @@ export class GameScene extends Phaser.Scene {
       this.random,
     )
 
+    this.moveFirstFireflyNearStart(itemCells)
+
     for (const cell of itemCells) {
       const position = this.getCellCenter(cell.row, cell.column)
 
@@ -2138,6 +2145,41 @@ export class GameScene extends Phaser.Scene {
     }
 
     return itemCells
+  }
+
+  /** O vagalume mais próximo do início passa a ficar a 3-5 passos: 1ª recompensa em segundos. */
+  private moveFirstFireflyNearStart(itemCells: MazeCell[]): void {
+    const distances = pathDistances(this.maze, { row: 0, column: 0 })
+    const stepsTo = (cell: MazeCell): number =>
+      distances.get(`${cell.row},${cell.column}`) ?? Infinity
+
+    if (itemCells.length === 0) {
+      return
+    }
+
+    let closest = 0
+
+    itemCells.forEach((cell, index) => {
+      if (stepsTo(cell) < stepsTo(itemCells[closest])) {
+        closest = index
+      }
+    })
+
+    if (stepsTo(itemCells[closest]) <= NEAR_FIREFLY_MAX_STEPS) {
+      return
+    }
+
+    const near = findNearStartCell(
+      this.maze,
+      [this.exitInformation.cell, ...itemCells],
+      this.random,
+      3,
+      NEAR_FIREFLY_MAX_STEPS,
+    )
+
+    if (near) {
+      itemCells[closest] = near
+    }
   }
 
   private collectItem(

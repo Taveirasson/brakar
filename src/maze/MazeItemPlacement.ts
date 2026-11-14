@@ -1,4 +1,5 @@
 import type { MazeCell } from './MazeGenerator'
+import { getOpenNeighbors, type CellPosition } from './MazePathFinder'
 
 type MazeQuaqrant = 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight'
 
@@ -99,4 +100,56 @@ export function findItemCellsByQuadrant(
   }
 
   return selectedCells
+}
+
+/** Distância em passos pelo labirinto a partir de uma célula (busca em largura). */
+export function pathDistances(
+  maze: MazeCell[][],
+  from: CellPosition,
+): Map<string, number> {
+  const distances = new Map<string, number>([[`${from.row},${from.column}`, 0]])
+  const queue: CellPosition[] = [from]
+
+  for (let index = 0; index < queue.length; index++) {
+    const current = queue[index]
+    const base = distances.get(`${current.row},${current.column}`) ?? 0
+
+    for (const next of getOpenNeighbors(maze, current)) {
+      const key = `${next.row},${next.column}`
+
+      if (!distances.has(key)) {
+        distances.set(key, base + 1)
+        queue.push(next)
+      }
+    }
+  }
+
+  return distances
+}
+
+/**
+ * Célula para o primeiro vagalume: perto do início (primeira recompensa em
+ * segundos). Prefere becos; devolve undefined se não houver célula na faixa.
+ */
+export function findNearStartCell(
+  maze: MazeCell[][],
+  excluded: CellPosition[],
+  random: () => number = Math.random,
+  minSteps = 3,
+  maxSteps = 5,
+): MazeCell | undefined {
+  const distances = pathDistances(maze, { row: 0, column: 0 })
+  const candidates = maze.flat().filter((cell) => {
+    const steps = distances.get(`${cell.row},${cell.column}`) ?? Infinity
+
+    return (
+      steps >= minSteps &&
+      steps <= maxSteps &&
+      !excluded.some((e) => e.row === cell.row && e.column === cell.column)
+    )
+  })
+  const deadEnds = candidates.filter((cell) => isDeadEnd(cell))
+  const pool = deadEnds.length > 0 ? deadEnds : candidates
+
+  return pool.length > 0 ? pickRandomCell(pool, random) : undefined
 }
