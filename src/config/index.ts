@@ -1,7 +1,2 @@
 export type GamePhase =
-  | 'litExploration'
-  | 'lockMessage'
-  | 'searchingItems'
-  | 'returningToExit'
-  | 'victory'
-  | 'defeat'
+  'opening' | 'searchingItems' | 'returningToExit' | 'victory' | 'defeat'

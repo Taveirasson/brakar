@@ -96,6 +96,10 @@ export const sfx = {
       tone(f, 0.25, { type: 'triangle', volume: 0.13, delay: i * 0.1 }),
     )
   },
+  /** O carro se afasta: ronco grave que some. */
+  carAway(): void {
+    tone(150, 1.4, { type: 'sawtooth', volume: 0.05, slideTo: 55 })
+  },
   /** Coruja: dois pios graves. */
   hoot(): void {
     tone(330, 0.28, { type: 'sine', volume: 0.12, slideTo: 260 })

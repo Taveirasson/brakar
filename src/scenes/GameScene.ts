@@ -6,6 +6,7 @@ import { braidMaze } from '../maze/mazeBraiding'
 import { MazeGenerator, type MazeCell } from '../maze/MazeGenerator'
 import {
   findFarthestCell,
+  getOpenNeighbors,
   type FarthestCellResult,
 } from '../maze/MazePathFinder'
 import {
@@ -152,6 +153,7 @@ const HIDING_MIN_HUNTER_DISTANCE = CELL_PITCH
 const HIDING_SPOTS_PER_CELL_ROW = 0.6
 const BUSH_SCALE = 1.25
 const POWER_UPS_PER_CELL_ROW = 0.3
+const OPENING_MS = 3200
 const DAILY_MAZE_SIZE = 10
 const SURVIVAL_MAZE_SIZE = 8
 
@@ -195,7 +197,7 @@ type MovementKeys = {
 }
 
 export class GameScene extends Phaser.Scene {
-  private gamePhase: GamePhase = 'litExploration'
+  private gamePhase: GamePhase = 'opening'
 
   private collectedItems = 0
   private readonly requiredItems = 3
@@ -231,6 +233,7 @@ export class GameScene extends Phaser.Scene {
   private tutorial?: Tutorial
   private owl?: Phaser.GameObjects.Image
   private owlCooldownMs = 0
+  private openingTimer?: Phaser.Time.TimerEvent
   private lastHunterState = ''
   private alertMarker?: Phaser.GameObjects.Text
   private stamina: StaminaState = FULL_STAMINA
@@ -310,6 +313,7 @@ export class GameScene extends Phaser.Scene {
     this.tutorial = undefined
     this.owl = undefined
     this.owlCooldownMs = 0
+    this.openingTimer = undefined
     this.lastHunterState = ''
     this.alertMarker = undefined
     this.night = this.mode === 'daily' ? 1 : getNight()
@@ -328,7 +332,7 @@ export class GameScene extends Phaser.Scene {
       this.effects_,
     )
 
-    this.gamePhase = 'litExploration'
+    this.gamePhase = 'opening'
     this.collectedItems = 0
     this.visibilityMaskCreated = false
 
@@ -359,10 +363,15 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.fadeIn(500, 5, 10, 7)
     this.startHud()
     this.startNotificationScene()
+    this.playOpening()
   }
 
   update(_time: number, delta: number): void {
-    if (this.gamePhase !== 'victory' && this.gamePhase !== 'defeat') {
+    if (
+      this.gamePhase !== 'victory' &&
+      this.gamePhase !== 'defeat' &&
+      this.gamePhase !== 'opening'
+    ) {
       this.elapsedMs += delta
     }
 
@@ -941,7 +950,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private updatePlayerMovement(delta = 16): void {
-    if (this.playerFoundExit) {
+    if (this.playerFoundExit || this.gamePhase === 'opening') {
       this.player.setVelocity(0, 0)
       return
     }
@@ -1008,11 +1017,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handlePlayerFoundExit(): void {
-    if (this.gamePhase === 'litExploration') {
-      this.showLockedExitMessage()
-      return
-    }
-
     if (this.gamePhase === 'returningToExit') {
       if (this.isPlayerCaught()) {
         this.catchPlayer()
@@ -1027,16 +1031,58 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private showLockedExitMessage(): void {
-    if (this.gamePhase !== 'litExploration') {
+  /** Abertura curta: o carro vai embora do ponto de partida e as luzes se apagam. */
+  private playOpening(): void {
+    const start = this.getCellCenter(0, 0)
+    const next = getOpenNeighbors(this.maze, { row: 0, column: 0 })[0]
+    const direction = next
+      ? this.getCellCenter(next.row, next.column).subtract(start).normalize()
+      : new Phaser.Math.Vector2(1, 0)
+
+    this.player.setVelocity(0, 0)
+
+    const car = this.add
+      .image(start.x, start.y, HEADLIGHTS_TEXTURE)
+      .setDepth(8)
+      .setAlpha(0.9)
+
+    this.minimapCamera.ignore(car)
+    this.tweens.add({
+      targets: car,
+      x: start.x + direction.x * CELL_PITCH * 2.5,
+      y: start.y + direction.y * CELL_PITCH * 2.5,
+      alpha: 0,
+      scale: 0.5,
+      duration: OPENING_MS - 400,
+      ease: 'Cubic.In',
+      onComplete: () => car.destroy(),
+    })
+    sfx.carAway()
+    this.showNotification(
+      'O CARRO SE FOI E DEIXOU O PIPOCA...',
+      '#f2ead3',
+      2400,
+    )
+
+    const skip = (): void => this.endOpening()
+
+    this.openingTimer = this.time.delayedCall(OPENING_MS, skip)
+    this.time.delayedCall(500, () => {
+      if (this.gamePhase !== 'opening') return
+
+      this.input.keyboard?.once('keydown', skip)
+      this.input.once('pointerdown', skip)
+    })
+  }
+
+  private endOpening(): void {
+    if (this.gamePhase !== 'opening') {
       return
     }
 
-    this.gamePhase = 'lockMessage'
-    this.player.setVelocity(0, 0)
-
-    this.scene.pause()
-    this.scene.run(SCENE_KEYS.lockedExit)
+    this.openingTimer?.remove()
+    this.openingTimer = undefined
+    this.beginItemSearch()
   }
 
   private finishGame(): void {
@@ -1168,8 +1214,8 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  public beginItemSearch(): void {
-    if (this.gamePhase !== 'lockMessage') {
+  private beginItemSearch(): void {
+    if (this.gamePhase !== 'opening') {
       return
     }
 
@@ -1187,6 +1233,11 @@ export class GameScene extends Phaser.Scene {
     this.spawnOwl()
     this.announceModifiers()
     this.startTutorial()
+    this.showNotification(
+      'JUNTE 3 VAGALUMES PARA CLAREAR A TRILHA ATÉ A ESTRADA',
+      '#d9ff6b',
+      2800,
+    )
     this.showTips()
   }
 
