@@ -53,3 +53,34 @@ export function createHeadlightsTexture(scene: Phaser.Scene): void {
   )
   graphics.destroy()
 }
+
+export const BONE_TEXTURE = 'bone'
+
+/** Osso: recupera o fôlego do Pipoca. Desenhado no código, com contorno escuro. */
+export function createBoneTexture(scene: Phaser.Scene): void {
+  if (scene.textures.exists(BONE_TEXTURE)) {
+    return
+  }
+
+  const graphics = scene.make.graphics({ x: 0, y: 0 })
+
+  for (const [color, grow] of [
+    [0x2a2118, 1],
+    [0xf2ead3, 0],
+  ] as const) {
+    graphics.fillStyle(color, 1)
+    graphics.fillRect(4 - grow, 5 - grow, 10 + grow * 2, 4 + grow * 2)
+
+    for (const [x, y] of [
+      [3, 4],
+      [3, 10],
+      [15, 4],
+      [15, 10],
+    ]) {
+      graphics.fillCircle(x, y, 2.4 + grow)
+    }
+  }
+
+  graphics.generateTexture(BONE_TEXTURE, 18, 14)
+  graphics.destroy()
+}

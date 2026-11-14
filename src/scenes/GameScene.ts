@@ -72,6 +72,8 @@ import {
   HEADLIGHT_COLOR,
   HEADLIGHTS_TEXTURE,
   createFireflyTexture,
+  createBoneTexture,
+  BONE_TEXTURE,
   createHeadlightsTexture,
 } from '../characters/forestProps'
 
@@ -94,9 +96,19 @@ const CATCH_EFFECT_MS = 400
 const DANGER_RADIUS_CELLS = 5
 // Moitas: dentro deste raio (px) do centro o Pipoca some, se não estiver correndo
 // e o Estouro não estiver colado nele.
-const HIDING_RADIUS = 14
+const HIDING_RADIUS = 26
 const HIDING_MIN_HUNTER_DISTANCE = CELL_PITCH
 const HIDING_SPOTS_PER_CELL_ROW = 0.6
+const BUSH_SCALE = 1.25
+
+// Lama: poças que freiam o Pipoca (um pouco) e o Estouro (muito).
+const MUD_CELLS_PER_CELL_ROW = 0.7
+const MUD_HALF_SIZE = CELL_PITCH / 3
+const MUD_PLAYER_SPEED = 0.7
+const MUD_HUNTER_SPEED = 0.45
+
+// Ossos: devolvem o fôlego todo.
+const BONES_PER_CELL_ROW = 0.4
 
 const MINIMAP_CELL_SIZE = 8
 const MINIMAP_PADDING = 12
@@ -142,6 +154,7 @@ export class GameScene extends Phaser.Scene {
   private sprinting = false
   private hidingSpots: Phaser.GameObjects.Image[] = []
   private hidden = false
+  private mudCells: MazeCell[] = []
   private stamina: StaminaState = FULL_STAMINA
 
   private exitInformation!: FarthestCellResult
@@ -181,6 +194,7 @@ export class GameScene extends Phaser.Scene {
     this.sprinting = false
     this.hidingSpots = []
     this.hidden = false
+    this.mudCells = []
     this.night = getNight()
     this.hunterSettings = hunterSettingsForNight(this.night)
 
@@ -204,6 +218,7 @@ export class GameScene extends Phaser.Scene {
     this.configureCollisions()
     this.configureCamera()
     this.createMinimap()
+    this.createMud()
     this.effects = new GameEffects(
       this,
       this.player,
@@ -765,7 +780,11 @@ export class GameScene extends Phaser.Scene {
     this.stamina = step.state
     this.sprinting = step.sprinting
 
-    const topSpeed = PLAYER_SPEED * (step.sprinting ? SPRINT_MULTIPLIER : 1)
+    const mudFactor = this.isInMud(this.player.x, this.player.y)
+      ? MUD_PLAYER_SPEED
+      : 1
+    const topSpeed =
+      PLAYER_SPEED * (step.sprinting ? SPRINT_MULTIPLIER : 1) * mudFactor
     const speed = isMovingDiagonally ? topSpeed / Math.SQRT2 : topSpeed
 
     if (horizontalDirection !== 0) {
@@ -927,12 +946,13 @@ export class GameScene extends Phaser.Scene {
     this.turnOffWorldLights()
     this.resetMinimap()
     const itemCells = this.spawnRequiredItems()
-    this.spawnHidingSpots(itemCells)
+    const bushCells = this.spawnHidingSpots(itemCells)
+    this.spawnBones([...itemCells, ...bushCells])
     this.spawnHunter()
   }
 
   /** Moitas nos corredores: o Pipoca some dentro delas e o Estouro perde o rastro. */
-  private spawnHidingSpots(itemCells: MazeCell[]): void {
+  private spawnHidingSpots(itemCells: MazeCell[]): MazeCell[] {
     const playerCell = this.getPlayerCell()
     const cells = pickHidingCells(
       this.maze,
@@ -941,6 +961,7 @@ export class GameScene extends Phaser.Scene {
         this.exitInformation.cell,
         playerCell,
         ...itemCells,
+        ...this.mudCells,
       ],
       Math.max(3, Math.round(this.mazeSize * HIDING_SPOTS_PER_CELL_ROW)),
     )
@@ -957,12 +978,122 @@ export class GameScene extends Phaser.Scene {
           tileFrameFor('tree', cell.row + 5, cell.column + 9, false, 15),
         )
         .setDepth(11)
+        .setScale(BUSH_SCALE)
         .setTint(0xb4d890)
         .setLighting(true)
 
       this.minimapCamera.ignore(bush)
       this.hidingSpots.push(bush)
     }
+
+    return cells
+  }
+
+  /** Poças de lama nos corredores: freiam o Pipoca e, mais ainda, o Estouro. */
+  private createMud(): void {
+    const cells = pickHidingCells(
+      this.maze,
+      [{ row: 0, column: 0 }, this.exitInformation.cell],
+      Math.max(3, Math.round(this.mazeSize * MUD_CELLS_PER_CELL_ROW)),
+    )
+
+    this.mudCells = cells
+
+    const mud = this.add.graphics().setDepth(-8)
+
+    for (const cell of cells) {
+      const center = this.getCellCenter(cell.row, cell.column)
+
+      mud.fillStyle(0x0d0905, 0.8)
+      mud.fillEllipse(
+        center.x,
+        center.y,
+        MUD_HALF_SIZE * 2,
+        MUD_HALF_SIZE * 1.8,
+      )
+      mud.fillStyle(0x1b120a, 0.95)
+      mud.fillEllipse(
+        center.x,
+        center.y,
+        MUD_HALF_SIZE * 1.6,
+        MUD_HALF_SIZE * 1.4,
+      )
+      mud.fillStyle(0x2b1e12, 0.8)
+      mud.fillEllipse(
+        center.x - 5,
+        center.y - 4,
+        MUD_HALF_SIZE * 0.8,
+        MUD_HALF_SIZE * 0.5,
+      )
+    }
+
+    this.minimapCamera.ignore(mud)
+  }
+
+  private isInMud(x: number, y: number): boolean {
+    return this.mudCells.some((cell) => {
+      const center = this.getCellCenter(cell.row, cell.column)
+
+      return (
+        Math.abs(x - center.x) <= MUD_HALF_SIZE &&
+        Math.abs(y - center.y) <= MUD_HALF_SIZE
+      )
+    })
+  }
+
+  /** Ossos nos corredores: devolvem o fôlego todo. */
+  private spawnBones(usedCells: MazeCell[]): void {
+    createBoneTexture(this)
+
+    const cells = pickHidingCells(
+      this.maze,
+      [
+        { row: 0, column: 0 },
+        this.exitInformation.cell,
+        this.getPlayerCell(),
+        ...usedCells,
+        ...this.mudCells,
+      ],
+      Math.max(2, Math.round(this.mazeSize * BONES_PER_CELL_ROW)),
+    )
+
+    for (const cell of cells) {
+      const position = this.getCellCenter(cell.row, cell.column)
+      const bone = this.physics.add.staticImage(
+        position.x,
+        position.y,
+        BONE_TEXTURE,
+      )
+
+      bone.setDepth(6).setLighting(true)
+      ;(bone.body as Phaser.Physics.Arcade.StaticBody).setSize(16, 16)
+      this.minimapCamera.ignore(bone)
+
+      this.tweens.add({
+        targets: bone,
+        angle: { from: -12, to: 12 },
+        duration: 700,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      })
+
+      this.physics.add.overlap(this.player, bone, () => {
+        this.collectBone(bone)
+      })
+    }
+  }
+
+  private collectBone(bone: Phaser.Physics.Arcade.Image): void {
+    if (!bone.active) {
+      return
+    }
+
+    this.tweens.killTweensOf(bone)
+    this.burstFirefly(bone.x, bone.y)
+    bone.destroy()
+    this.stamina = FULL_STAMINA
+    this.showNotification('OSSO! FÔLEGO RECUPERADO', '#f2ead3', 1200)
   }
 
   private updateHiding(): void {
@@ -1040,6 +1171,10 @@ export class GameScene extends Phaser.Scene {
     if (!hunterIsActive) {
       return
     }
+
+    hunter.speedMultiplier = this.isInMud(hunter.position.x, hunter.position.y)
+      ? MUD_HUNTER_SPEED
+      : 1
 
     const perceivesPlayer = canPerceivePlayer({
       hunter: hunter.position,

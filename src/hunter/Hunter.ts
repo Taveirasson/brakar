@@ -45,6 +45,8 @@ export class Hunter {
   private readonly sprite: Phaser.GameObjects.Sprite
   private readonly useEstouroSprite: boolean
   private currentCell: CellPosition
+  /** 1 = normal; menor que 1 na lama. */
+  speedMultiplier = 1
   private targetCell: CellPosition
 
   constructor(
@@ -114,7 +116,8 @@ export class Hunter {
       this.sprite.anims.play(estouroAnimationFor(this.brain.state), true)
     }
 
-    let remaining = (this.currentSpeed() * deltaMs) / 1000
+    let remaining =
+      (this.currentSpeed() * this.speedMultiplier * deltaMs) / 1000
 
     if (this.brain.shouldChaseDirectly(this.currentCell, playerCell)) {
       // Jogador na mesma célula: vai direto até ele. Com passo de 3 tiles, a área
