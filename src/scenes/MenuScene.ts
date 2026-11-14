@@ -10,6 +10,15 @@ import {
 } from '../characters/forestProps'
 
 const MENU_BACKGROUND = 'menu-background'
+const GLOW_KEY = 'menu-eye-glow'
+const SPARK_KEY = 'menu-fuse-spark'
+
+// Pontos da arte (em px da tela de 960x540) onde ficam os olhos e o pavio do Estouro.
+const EYES = [
+  { x: 672, y: 183 },
+  { x: 735, y: 183 },
+]
+const FUSE = { x: 772, y: 38 }
 
 export class MenuScene extends Phaser.Scene {
   constructor() {
@@ -28,7 +37,16 @@ export class MenuScene extends Phaser.Scene {
     const titleX = 600
     const buttonsX = 660
 
-    addText(this, titleX, 62, 'BRAKAR', 'title')
+    const title = addText(this, titleX, 62, 'BRAKAR', 'title')
+
+    this.tweens.add({
+      targets: title,
+      y: 58,
+      duration: 1800,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    })
     addText(
       this,
       titleX,
@@ -73,9 +91,51 @@ export class MenuScene extends Phaser.Scene {
   private createBackdrop(): void {
     const { width, height } = this.scale
 
-    this.add
-      .image(width / 2, height / 2, MENU_BACKGROUND)
-      .setDisplaySize(width, height)
+    this.createMenuTextures()
+
+    // fundo, olhos brilhantes e pavio num só contêiner, que "respira" devagar
+    const art = this.add.container(width / 2, height / 2)
+
+    art.add(this.add.image(0, 0, MENU_BACKGROUND).setDisplaySize(width, height))
+
+    for (const eye of EYES) {
+      const glow = this.add
+        .image(eye.x - width / 2, eye.y - height / 2, GLOW_KEY)
+        .setBlendMode(Phaser.BlendModes.ADD)
+        .setScale(0.55)
+        .setAlpha(0.2)
+
+      art.add(glow)
+      this.tweens.add({
+        targets: glow,
+        alpha: { from: 0.15, to: 0.7 },
+        scale: { from: 0.45, to: 0.75 },
+        duration: 1300,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      })
+    }
+
+    this.tweens.add({
+      targets: art,
+      scale: 1.04,
+      duration: 9000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    })
+
+    this.add.particles(FUSE.x, FUSE.y, SPARK_KEY, {
+      lifespan: 700,
+      speed: { min: 25, max: 70 },
+      angle: { min: 200, max: 340 },
+      gravityY: 90,
+      scale: { start: 1.1, end: 0 },
+      alpha: { start: 1, end: 0 },
+      frequency: 45,
+      blendMode: 'ADD',
+    })
 
     createFireflyTexture(this)
     this.add.particles(0, 0, FIREFLY_TEXTURE, {
@@ -89,6 +149,45 @@ export class MenuScene extends Phaser.Scene {
       frequency: 260,
       maxAliveParticles: 22,
     })
+  }
+
+  /** Brilho vermelho dos olhos (gradiente) e faísca do pavio. */
+  private createMenuTextures(): void {
+    if (!this.textures.exists(GLOW_KEY)) {
+      const size = 64
+      const texture = this.textures.createCanvas(GLOW_KEY, size, size)
+      const context = texture?.getContext()
+
+      if (texture && context) {
+        const gradient = context.createRadialGradient(
+          size / 2,
+          size / 2,
+          0,
+          size / 2,
+          size / 2,
+          size / 2,
+        )
+
+        gradient.addColorStop(0, 'rgba(255, 120, 100, 0.95)')
+        gradient.addColorStop(0.4, 'rgba(255, 50, 50, 0.45)')
+        gradient.addColorStop(1, 'rgba(255, 30, 30, 0)')
+        context.fillStyle = gradient
+        context.fillRect(0, 0, size, size)
+        texture.refresh()
+        texture.setFilter(Phaser.Textures.FilterMode.LINEAR)
+      }
+    }
+
+    if (!this.textures.exists(SPARK_KEY)) {
+      const graphics = this.make.graphics({ x: 0, y: 0 })
+
+      graphics.fillStyle(0xff9a3c, 0.5)
+      graphics.fillCircle(3, 3, 3)
+      graphics.fillStyle(0xfff2b0, 1)
+      graphics.fillCircle(3, 3, 1.5)
+      graphics.generateTexture(SPARK_KEY, 6, 6)
+      graphics.destroy()
+    }
   }
 
   private startGame(): void {
