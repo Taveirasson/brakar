@@ -36,3 +36,17 @@ Feito:
 NOVO FOCO pedido pelo usuário: (a) paredes/labirinto com mais saídas, (b) visual: efeitos e sprites melhores, (c) história no começo (cutscene). Próximas: efeitos de partículas/sprites melhores (sprites do Pipoca/Estouro, sombras sob os personagens, partículas de coleta, reforçar visual da saída/estrada).
 
 Ideias pendentes (por ordem): itens com efeito, conquistas.
+
+## FASE 2 — Retenção (usuário autorizou mudar o jogo sem medo; vale para PC e celular)
+
+Ordem planejada (marque ao concluir):
+1. [x] Desafio do dia: mesmo labirinto para todos no dia (semente = data), sequência de dias seguidos, melhor tempo do dia, botão no menu, compartilhar com 🔥. src/run/seed.ts, src/run/daily.ts. Testado (mesmo labirinto em dois carregamentos).
+2. [ ] Meta-progressão: ossos viram moeda guardada; loja de colares/cosméticos para o Pipoca.
+3. [ ] Modificadores de noite (ex.: névoa densa, lua cheia, Estouro duplo, lama em todo lugar) com recompensa maior.
+4. [ ] Power-ups no labirinto (isca de vagalume, escudo de uma batida, passo rápido).
+5. [ ] Missões diárias/semanais (ex.: 'esconda-se 3 vezes') com recompensa de moeda.
+6. [ ] Modo infinito/sobrevivência (arcade) com pontuação.
+7. [ ] Tutorial interativo curto na primeira partida.
+8. [ ] Novo tipo de inimigo ou evento (ex.: coruja que denuncia, Estouro filhote).
+9. [ ] Placar local de melhores tempos por dia / histórico.
+

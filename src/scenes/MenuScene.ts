@@ -3,8 +3,9 @@ import { SCENE_KEYS } from '../config/sceneKeys'
 import { createTextButton } from '../ui/createTextButton'
 import { hasSeenIntro } from './IntroScene'
 import { ACHIEVEMENTS, loadEarned } from '../run/achievements'
+import { activeStreak, dateKey, loadDaily } from '../run/daily'
 import { formatTime, loadRecords } from '../run/records'
-import { resetNight } from '../run/runState'
+import { resetNight, setGameMode } from '../run/runState'
 import { FONT_FAMILY, addText } from '../ui/theme'
 import {
   FIREFLY_TEXTURE,
@@ -62,7 +63,7 @@ export class MenuScene extends Phaser.Scene {
     createTextButton({
       scene: this,
       x: buttonsX,
-      y: 360,
+      y: 335,
       label: 'INICIAR',
       onClick: () => {
         this.startGame()
@@ -72,10 +73,23 @@ export class MenuScene extends Phaser.Scene {
     createTextButton({
       scene: this,
       x: buttonsX,
-      y: 420,
+      y: 390,
+      label: 'DESAFIO DO DIA',
+      onClick: () => {
+        resetNight()
+        setGameMode('daily')
+        this.scene.start(SCENE_KEYS.game)
+      },
+    })
+
+    createTextButton({
+      scene: this,
+      x: buttonsX,
+      y: 445,
       label: 'HISTÓRIA',
       onClick: () => {
         resetNight()
+        setGameMode('normal')
         this.scene.start(SCENE_KEYS.intro)
       },
     })
@@ -83,7 +97,7 @@ export class MenuScene extends Phaser.Scene {
     createTextButton({
       scene: this,
       x: buttonsX,
-      y: 480,
+      y: 500,
       label: 'CONFIGURAÇÕES',
       onClick: () => {
         this.openConfigScene()
@@ -158,8 +172,17 @@ export class MenuScene extends Phaser.Scene {
   /** Recordes no canto da tela de título: dá um motivo para jogar de novo. */
   private showRecords(): void {
     const records = loadRecords()
+    const daily = loadDaily()
+    const today = dateKey()
+    const streak = activeStreak(daily, today)
+    const dailyLine = daily.best[today]
+      ? `Desafio de hoje: ${formatTime(daily.best[today])}`
+      : streak > 0
+        ? `Desafio do dia: não perca a sequência (${streak})`
+        : 'Desafio do dia: novo labirinto hoje'
 
-    if (records.escapes === 0 && records.caught === 0) {
+    if (records.escapes === 0 && records.caught === 0 && streak === 0) {
+      this.addInfoText([dailyLine])
       return
     }
 
@@ -170,8 +193,14 @@ export class MenuScene extends Phaser.Scene {
         : 'Ainda sem fuga',
       `Fugas: ${records.escapes}  ·  Capturas: ${records.caught}`,
       `Conquistas: ${loadEarned().length}/${ACHIEVEMENTS.length}`,
-    ]
+      streak > 0 ? `🔥 Sequência diária: ${streak}` : '',
+      dailyLine,
+    ].filter(Boolean)
 
+    this.addInfoText(lines)
+  }
+
+  private addInfoText(lines: string[]): void {
     this.add
       .text(18, 14, lines, {
         fontFamily: FONT_FAMILY,
@@ -225,6 +254,7 @@ export class MenuScene extends Phaser.Scene {
 
   private startGame(): void {
     resetNight()
+    setGameMode('normal')
     // a história aparece na primeira vez; depois vai direto para o jogo
     this.scene.start(hasSeenIntro() ? SCENE_KEYS.game : SCENE_KEYS.intro)
   }

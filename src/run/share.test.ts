@@ -19,4 +19,20 @@ describe('buildShareText', () => {
       buildShareText({ night: 2, timeMs: 5000, escaped: false }, 'u'),
     ).toContain('me pegou')
   })
+
+  it('desafio do dia mostra data e sequência', () => {
+    const text = buildShareText(
+      {
+        night: 1,
+        timeMs: 83500,
+        escaped: true,
+        daily: { date: '2026-11-14', streak: 3 },
+      },
+      'u',
+    )
+
+    expect(text).toContain('Desafio do dia 14/11')
+    expect(text).toContain('1:23.5')
+    expect(text).toContain('3 dias')
+  })
 })

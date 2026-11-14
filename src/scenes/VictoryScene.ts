@@ -1,7 +1,8 @@
 import Phaser from 'phaser'
 import { buildShareText, copyText } from '../run/share'
 import { epilogueForNight } from '../run/story'
-import { nextNight } from '../run/runState'
+import { dateKey } from '../run/daily'
+import { nextNight, type GameMode } from '../run/runState'
 import { SCENE_KEYS } from '../config/sceneKeys'
 import { createTextButton } from '../ui/createTextButton'
 import { formatTime, type Records } from '../run/records'
@@ -13,6 +14,8 @@ export class VictoryScene extends Phaser.Scene {
   private isNewBest = false
   private night = 1
   private achievements: string[] = []
+  private mode: GameMode = 'normal'
+  private daily?: { streak: number; isNewBest: boolean; bestMs?: number }
 
   constructor() {
     super(SCENE_KEYS.victory)
@@ -24,12 +27,16 @@ export class VictoryScene extends Phaser.Scene {
     isNewBest?: boolean
     night?: number
     achievements?: string[]
+    mode?: GameMode
+    daily?: { streak: number; isNewBest: boolean; bestMs?: number }
   }): void {
     this.timeMs = data.timeMs ?? 0
     this.records = data.records
     this.isNewBest = data.isNewBest ?? false
     this.night = data.night ?? 1
     this.achievements = data.achievements ?? []
+    this.mode = data.mode ?? 'normal'
+    this.daily = data.daily
   }
 
   create(): void {
@@ -44,21 +51,25 @@ export class VictoryScene extends Phaser.Scene {
       this,
       centerX,
       centerY - 130,
-      `NOITE ${this.night} SUPERADA`,
+      this.isDaily ? 'DESAFIO CONCLUÍDO' : `NOITE ${this.night} SUPERADA`,
       'heading',
     )
     addText(
       this,
       centerX,
       centerY - 70,
-      epilogueForNight(this.night).headline,
+      this.isDaily
+        ? 'Você escapou do labirinto de hoje.'
+        : epilogueForNight(this.night).headline,
       'body',
     )
     addText(
       this,
       centerX,
       centerY - 38,
-      epilogueForNight(this.night).detail,
+      this.isDaily
+        ? 'Amanhã a mata muda. Volte para manter a sequência.'
+        : epilogueForNight(this.night).detail,
       'muted',
     )
 
@@ -66,14 +77,9 @@ export class VictoryScene extends Phaser.Scene {
       this,
       centerX,
       centerY + 5,
-      [
-        this.isNewBest
-          ? `NOVO RECORDE: ${formatTime(this.timeMs)}`
-          : `Tempo: ${formatTime(this.timeMs)}`,
-        `Melhor: ${formatTime(this.records?.bestTimeMs ?? this.timeMs)}  ·  Fugas: ${this.records?.escapes ?? 1}`,
-      ],
-      this.isNewBest ? 'body' : 'muted',
-      this.isNewBest ? THEME.title : undefined,
+      this.statLines(),
+      this.highlightsBest ? 'body' : 'muted',
+      this.highlightsBest ? THEME.title : undefined,
     )
 
     if (this.achievements.length > 0) {
@@ -91,7 +97,7 @@ export class VictoryScene extends Phaser.Scene {
       scene: this,
       x: centerX,
       y: centerY + 80,
-      label: `NOITE ${this.night + 1}`,
+      label: this.isDaily ? 'MELHORAR O TEMPO' : `NOITE ${this.night + 1}`,
       onClick: () => {
         this.restartGame()
       },
@@ -116,6 +122,34 @@ export class VictoryScene extends Phaser.Scene {
     )
 
     this.cameras.main.fadeIn(400, 5, 10, 7)
+  }
+
+  private get isDaily(): boolean {
+    return this.mode === 'daily'
+  }
+
+  private get highlightsBest(): boolean {
+    return this.isDaily ? (this.daily?.isNewBest ?? false) : this.isNewBest
+  }
+
+  private statLines(): string[] {
+    if (this.isDaily) {
+      const streak = this.daily?.streak ?? 1
+
+      return [
+        this.daily?.isNewBest
+          ? `MELHOR DE HOJE: ${formatTime(this.timeMs)}`
+          : `Tempo: ${formatTime(this.timeMs)}`,
+        `Melhor de hoje: ${formatTime(this.daily?.bestMs ?? this.timeMs)}  ·  🔥 ${streak} ${streak === 1 ? 'dia' : 'dias'}`,
+      ]
+    }
+
+    return [
+      this.isNewBest
+        ? `NOVO RECORDE: ${formatTime(this.timeMs)}`
+        : `Tempo: ${formatTime(this.timeMs)}`,
+      `Melhor: ${formatTime(this.records?.bestTimeMs ?? this.timeMs)}  ·  Fugas: ${this.records?.escapes ?? 1}`,
+    ]
   }
 
   /** Chuva de confete colorido caindo atrás do painel. */
@@ -154,7 +188,14 @@ export class VictoryScene extends Phaser.Scene {
     const share = async () => {
       const ok = await copyText(
         buildShareText(
-          { night: this.night, timeMs: this.timeMs, escaped },
+          {
+            night: this.night,
+            timeMs: this.timeMs,
+            escaped,
+            daily: this.isDaily
+              ? { date: dateKey(), streak: this.daily?.streak ?? 1 }
+              : undefined,
+          },
           window.location.href.split('?')[0],
         ),
       )
@@ -168,7 +209,10 @@ export class VictoryScene extends Phaser.Scene {
   }
 
   private restartGame(): void {
-    nextNight()
+    if (!this.isDaily) {
+      nextNight()
+    }
+
     this.scene.stop(SCENE_KEYS.game)
     this.scene.start(SCENE_KEYS.game)
   }

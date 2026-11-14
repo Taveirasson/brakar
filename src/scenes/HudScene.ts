@@ -136,8 +136,8 @@ export class HudScene extends Phaser.Scene {
     this.hiddenLabel?.setAlpha(hidden ? 1 : 0)
   }
 
-  setNight(night: number): void {
-    this.nightLabel?.setText(`Noite ${night}`)
+  setNight(night: number, daily = false): void {
+    this.nightLabel?.setText(daily ? 'Desafio do dia' : `Noite ${night}`)
   }
 
   setFireflies(collected: number, required: number | null): void {

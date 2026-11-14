@@ -1,5 +1,7 @@
 import Phaser from 'phaser'
 import { applyDifficulty, getDifficulty } from '../config/difficulty'
+import { dateKey, recordDailyEscape } from '../run/daily'
+import { createSeededRandom, hashString } from '../run/seed'
 import { braidMaze } from '../maze/mazeBraiding'
 import { MazeGenerator, type MazeCell } from '../maze/MazeGenerator'
 import {
@@ -44,9 +46,9 @@ import { hidingSpotOffset, pickHidingCells } from '../maze/HidingSpotPlacement'
 import { FONT_FAMILY } from '../ui/theme'
 import { touchInput } from '../input/touchInput'
 import { sfx, toggleMuted } from '../audio/sfx'
-import { getNight } from '../run/runState'
+import { getGameMode, getNight, type GameMode } from '../run/runState'
 import { unlockAchievements } from '../run/achievements'
-import { recordCaught, recordEscape } from '../run/records'
+import { loadRecords, recordCaught, recordEscape } from '../run/records'
 import { NIGHT_LIGHTING } from '../vision/moonlight'
 import { Hunter } from '../hunter/Hunter'
 import { GameEffects } from '../effects/GameEffects'
@@ -108,6 +110,7 @@ const HIDING_RADIUS = 26
 const HIDING_MIN_HUNTER_DISTANCE = CELL_PITCH
 const HIDING_SPOTS_PER_CELL_ROW = 0.6
 const BUSH_SCALE = 1.25
+const DAILY_MAZE_SIZE = 10
 
 // Pipoca com medo: treme quando o Estouro chega perto.
 const FEAR_DANGER = 0.55
@@ -197,6 +200,8 @@ export class GameScene extends Phaser.Scene {
   private effects?: GameEffects
   private hunterSettings: HunterSettings = DEFAULT_HUNTER_SETTINGS
   private night = 1
+  private mode: GameMode = 'normal'
+  private random: () => number = Math.random
 
   private visitedCells = new Set<string>()
   /** Vagalumes, ossos e moitas já vistos, para aparecerem no minimapa. */
@@ -220,7 +225,12 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.mazeSize = getSavedMazeSize()
+    this.mode = getGameMode()
+    this.mazeSize = this.mode === 'daily' ? DAILY_MAZE_SIZE : getSavedMazeSize()
+    this.random =
+      this.mode === 'daily'
+        ? createSeededRandom(hashString(`brakar-${dateKey()}`))
+        : Math.random
     this.worldPixels = worldSize(this.mazeSize)
     this.playerFoundExit = false
     this.elapsedMs = 0
@@ -235,10 +245,10 @@ export class GameScene extends Phaser.Scene {
     this.timesHunted = 0
     this.lastHunterState = ''
     this.alertMarker = undefined
-    this.night = getNight()
+    this.night = this.mode === 'daily' ? 1 : getNight()
     this.hunterSettings = applyDifficulty(
       hunterSettingsForNight(this.night),
-      getDifficulty(),
+      this.mode === 'daily' ? 'normal' : getDifficulty(),
     )
 
     this.gamePhase = 'litExploration'
@@ -294,15 +304,23 @@ export class GameScene extends Phaser.Scene {
   }
 
   private generateMaze(): void {
-    const generator = new MazeGenerator(this.mazeSize, this.mazeSize)
+    const generator = new MazeGenerator(
+      this.mazeSize,
+      this.mazeSize,
+      this.random,
+    )
 
     this.maze = generator.generate()
 
     // ciclos e passagens extras: rotas alternativas para fugir do Estouro
-    braidMaze(this.maze, {
-      deadEndChance: DEAD_END_OPEN_CHANCE,
-      extraOpenings: Math.round(this.mazeSize * EXTRA_OPENINGS_PER_ROW),
-    })
+    braidMaze(
+      this.maze,
+      {
+        deadEndChance: DEAD_END_OPEN_CHANCE,
+        extraOpenings: Math.round(this.mazeSize * EXTRA_OPENINGS_PER_ROW),
+      },
+      this.random,
+    )
 
     this.exitInformation = findFarthestCell(this.maze, 0, 0)
   }
@@ -943,7 +961,8 @@ export class GameScene extends Phaser.Scene {
     this.player.setVelocity(0, 0)
 
     const timeMs = Math.round(this.elapsedMs)
-    const result = recordEscape(timeMs, this.night)
+    const daily = this.mode === 'daily' ? recordDailyEscape(timeMs) : undefined
+    const result = daily ? undefined : recordEscape(timeMs, this.night)
     const achievements = this.earnAchievements(true, timeMs)
 
     this.physics.pause()
@@ -957,6 +976,12 @@ export class GameScene extends Phaser.Scene {
         night: this.night,
         ...result,
         achievements,
+        mode: this.mode,
+        daily: daily && {
+          streak: daily.streak,
+          isNewBest: daily.isNewBest,
+          bestMs: daily.state.best[dateKey()],
+        },
       })
     })
   }
@@ -1089,17 +1114,16 @@ export class GameScene extends Phaser.Scene {
 
   /** Moitas nos corredores: o Pipoca some dentro delas e o Estouro perde o rastro. */
   private spawnHidingSpots(itemCells: MazeCell[]): MazeCell[] {
-    const playerCell = this.getPlayerCell()
     const cells = pickHidingCells(
       this.maze,
       [
         { row: 0, column: 0 },
         this.exitInformation.cell,
-        playerCell,
         ...itemCells,
         ...this.mudCells,
       ],
       Math.max(3, Math.round(this.mazeSize * HIDING_SPOTS_PER_CELL_ROW)),
+      this.random,
     )
 
     for (const cell of cells) {
@@ -1132,6 +1156,7 @@ export class GameScene extends Phaser.Scene {
       this.maze,
       [{ row: 0, column: 0 }, this.exitInformation.cell],
       Math.max(3, Math.round(this.mazeSize * MUD_CELLS_PER_CELL_ROW)),
+      this.random,
     )
 
     this.mudCells = cells
@@ -1187,11 +1212,11 @@ export class GameScene extends Phaser.Scene {
       [
         { row: 0, column: 0 },
         this.exitInformation.cell,
-        this.getPlayerCell(),
         ...usedCells,
         ...this.mudCells,
       ],
       Math.max(2, Math.round(this.mazeSize * BONES_PER_CELL_ROW)),
+      this.random,
     )
 
     for (const cell of cells) {
@@ -1382,7 +1407,8 @@ export class GameScene extends Phaser.Scene {
     sfx.stopDrone()
     sfx.caught()
     const timeMs = Math.round(this.elapsedMs)
-    const records = recordCaught(this.night)
+    const records =
+      this.mode === 'daily' ? loadRecords() : recordCaught(this.night)
     const achievements = this.earnAchievements(false, timeMs)
     this.effects?.stop()
     this.player.setVelocity(0, 0)
@@ -1400,6 +1426,7 @@ export class GameScene extends Phaser.Scene {
         timeMs,
         records,
         achievements,
+        mode: this.mode,
       })
     })
   }
@@ -1540,6 +1567,7 @@ export class GameScene extends Phaser.Scene {
     const itemCells: MazeCell[] = findItemCellsByQuadrant(
       this.maze,
       this.exitInformation.cell,
+      this.random,
     )
 
     for (const cell of itemCells) {
@@ -1742,7 +1770,7 @@ export class GameScene extends Phaser.Scene {
       this.gamePhase === 'returningToExit'
 
     hud.setTime(this.elapsedMs)
-    hud.setNight(this.night)
+    hud.setNight(this.night, this.mode === 'daily')
     hud.setHidden(this.hidden)
     hud.setStamina(this.stamina.value, this.stamina.exhausted)
     hud.setFireflies(this.collectedItems, searching ? this.requiredItems : null)

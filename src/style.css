@@ -38,7 +38,9 @@ canvas {
   z-index: 10;
   padding: 0 24px;
   text-align: center;
-  font: 600 18px 'Pixelify Sans', monospace;
+  font:
+    600 18px 'Pixelify Sans',
+    monospace;
   color: #f4d35e;
   text-shadow: 0 0 10px rgba(244, 211, 94, 0.6);
   pointer-events: none;

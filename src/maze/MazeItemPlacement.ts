@@ -43,8 +43,8 @@ function isDeadEnd(cell: MazeCell): boolean {
   return wallCount === 3
 }
 
-function pickRandomCell(cells: MazeCell[]): MazeCell {
-  const randomIndex = Math.floor(Math.random() * cells.length)
+function pickRandomCell(cells: MazeCell[], random: () => number): MazeCell {
+  const randomIndex = Math.floor(random() * cells.length)
 
   const selectedCell = cells[randomIndex]
 
@@ -58,6 +58,7 @@ function pickRandomCell(cells: MazeCell[]): MazeCell {
 export function findItemCellsByQuadrant(
   maze: MazeCell[][],
   exitCell: MazeCell,
+  random: () => number = Math.random,
 ): MazeCell[] {
   const totalRows = maze.length
   const totalColumns = maze[0]?.length ?? 0
@@ -92,7 +93,7 @@ export function findItemCellsByQuadrant(
 
     const candidates = deadEndCells.length > 0 ? deadEndCells : quadrantCells
 
-    const selectedCell = pickRandomCell(candidates)
+    const selectedCell = pickRandomCell(candidates, random)
 
     selectedCells.push(selectedCell)
   }

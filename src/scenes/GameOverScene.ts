@@ -1,6 +1,7 @@
 import Phaser from 'phaser'
 import { buildShareText, copyText } from '../run/share'
-import { resetNight } from '../run/runState'
+import { dateKey } from '../run/daily'
+import { getGameMode, resetNight } from '../run/runState'
 import { SCENE_KEYS } from '../config/sceneKeys'
 import { createTextButton } from '../ui/createTextButton'
 import { formatTime, type Records } from '../run/records'
@@ -46,7 +47,9 @@ export class GameOverScene extends Phaser.Scene {
       this,
       centerX,
       centerY - 70,
-      `Você não sobreviveu à noite ${this.night}.`,
+      getGameMode() === 'daily'
+        ? 'Você não escapou do labirinto de hoje. Tente de novo!'
+        : `Você não sobreviveu à noite ${this.night}.`,
       'body',
     )
 
@@ -116,7 +119,15 @@ export class GameOverScene extends Phaser.Scene {
     const share = async () => {
       const ok = await copyText(
         buildShareText(
-          { night: this.night, timeMs: this.timeMs, escaped },
+          {
+            night: this.night,
+            timeMs: this.timeMs,
+            escaped,
+            daily:
+              getGameMode() === 'daily'
+                ? { date: dateKey(), streak: 0 }
+                : undefined,
+          },
           window.location.href.split('?')[0],
         ),
       )
