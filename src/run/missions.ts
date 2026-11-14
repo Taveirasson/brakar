@@ -25,7 +25,7 @@ export interface MissionTemplate {
 export const MISSIONS: MissionTemplate[] = [
   {
     id: 'hide',
-    title: 'Esconda-se em moitas',
+    title: 'Esconda-se',
     target: 3,
     reward: 4,
     gain: (s) => s.hides,
@@ -46,7 +46,7 @@ export const MISSIONS: MissionTemplate[] = [
   },
   {
     id: 'escape',
-    title: 'Escape do Estouro',
+    title: 'Fuja do Estouro',
     target: 2,
     reward: 6,
     gain: (s) => (s.escaped ? 1 : 0),
@@ -60,7 +60,7 @@ export const MISSIONS: MissionTemplate[] = [
   },
   {
     id: 'ghost',
-    title: 'Escape sem ser caçado',
+    title: 'Fuga invisível',
     target: 1,
     reward: 7,
     gain: (s) => (s.escaped && s.timesHunted === 0 ? 1 : 0),

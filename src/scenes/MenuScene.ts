@@ -8,7 +8,7 @@ import { formatTime, loadRecords } from '../run/records'
 import { loadMissions, missionStatuses } from '../run/missions'
 import { loadWallet } from '../run/wallet'
 import { resetNight, resetOpening, setGameMode } from '../run/runState'
-import { FONT_FAMILY, addText } from '../ui/theme'
+import { FONT_FAMILY, THEME, addText } from '../ui/theme'
 import {
   FIREFLY_TEXTURE,
   createFireflyTexture,
@@ -24,6 +24,11 @@ const EYES = [
   { x: 735, y: 183 },
 ]
 const FUSE = { x: 772, y: 38 }
+
+/** Coluna de botões: 220 de largura; a linha de baixo divide essa largura em duas com 10 de vão. */
+const ROW_BUTTON_WIDTH = 105
+const ROW_BUTTON_OFFSET = 57.5
+const INFO_X = 18
 
 export class MenuScene extends Phaser.Scene {
   constructor() {
@@ -110,10 +115,10 @@ export class MenuScene extends Phaser.Scene {
 
     createTextButton({
       scene: this,
-      x: buttonsX - 55,
+      x: buttonsX - ROW_BUTTON_OFFSET,
       y: 500,
-      width: 130,
-      fontSize: 18,
+      width: ROW_BUTTON_WIDTH,
+      fontSize: 17,
       label: 'HISTÓRIA',
       onClick: () => {
         resetNight()
@@ -124,10 +129,10 @@ export class MenuScene extends Phaser.Scene {
 
     createTextButton({
       scene: this,
-      x: buttonsX + 80,
+      x: buttonsX + ROW_BUTTON_OFFSET,
       y: 500,
-      width: 130,
-      fontSize: 18,
+      width: ROW_BUTTON_WIDTH,
+      fontSize: 17,
       label: 'AJUSTES',
       onClick: () => {
         this.openConfigScene()
@@ -208,58 +213,93 @@ export class MenuScene extends Phaser.Scene {
     const dailyLine = daily.best[today]
       ? `Desafio de hoje: ${formatTime(daily.best[today])}`
       : streak > 0
-        ? `Desafio do dia: não perca a sequência (${streak})`
+        ? `Desafio do dia: mantenha a sequência (${streak})`
         : 'Desafio do dia: novo labirinto hoje'
+    const played = records.escapes > 0 || records.caught > 0 || streak > 0
+    const lines = played
+      ? [
+          `Recorde: noite ${records.bestNight}  ·  Melhor fuga: ${
+            records.bestTimeMs ? formatTime(records.bestTimeMs) : '—'
+          }`,
+          `Fugas: ${records.escapes}  ·  Capturas: ${records.caught}  ·  Conquistas: ${loadEarned().length}/${ACHIEVEMENTS.length}`,
+          streak > 0 ? `🔥 Sequência diária: ${streak}` : '',
+          dailyLine,
+        ].filter(Boolean)
+      : [dailyLine]
 
-    if (records.escapes === 0 && records.caught === 0 && streak === 0) {
-      this.addInfoText([dailyLine, '▸ Ver histórico'])
-      return
-    }
+    const text = this.addInfoText(lines)
 
-    const lines = [
-      `Recorde: noite ${records.bestNight}`,
-      records.bestTimeMs
-        ? `Melhor fuga: ${formatTime(records.bestTimeMs)}`
-        : 'Ainda sem fuga',
-      `Fugas: ${records.escapes}  ·  Capturas: ${records.caught}`,
-      `Conquistas: ${loadEarned().length}/${ACHIEVEMENTS.length}`,
-      streak > 0 ? `🔥 Sequência diária: ${streak}` : '',
-      dailyLine,
-      '▸ Ver histórico',
-    ].filter(Boolean)
-
-    this.addInfoText(lines)
+    // atalho em forma de botão pequeno, logo abaixo do texto
+    createTextButton({
+      scene: this,
+      x: INFO_X + 62,
+      y: text.y + text.height + 20,
+      label: '▸ HISTÓRICO',
+      width: 124,
+      fontSize: 14,
+      onClick: () => this.scene.start(SCENE_KEYS.history),
+    })
   }
 
-  /** Missões do dia no canto superior direito. */
+  /** Missões do dia: painel translúcido à direita, abaixo do pavio da bomba. */
   private showMissions(): void {
     const statuses = missionStatuses(loadMissions())
-    const lines = [
-      'MISSÕES DO DIA',
-      ...statuses.map(({ mission, progress, done }) =>
-        done
-          ? `✔ ${mission.title}`
-          : `· ${mission.title} ${progress}/${mission.target}  (+${mission.reward})`,
-      ),
-    ]
+    const width = 164
+    const left = this.scale.width - 16 - width
+    const top = 68
+    const lineHeight = 21
+    const height = 30 + statuses.length * lineHeight
 
     this.add
-      .text(this.scale.width - 18, 14, lines, {
-        fontFamily: FONT_FAMILY,
-        fontSize: '14px',
-        color: '#f2ead3',
-        align: 'right',
-        lineSpacing: 6,
-        stroke: '#050a07',
-        strokeThickness: 4,
-      })
-      .setOrigin(1, 0)
+      .graphics()
       .setDepth(5)
+      .fillStyle(THEME.backdrop, 0.62)
+      .fillRoundedRect(left, top, width, height, 10)
+      .lineStyle(1, THEME.buttonBorder, 0.7)
+      .strokeRoundedRect(left, top, width, height, 10)
+
+    const style = {
+      fontFamily: FONT_FAMILY,
+      fontSize: '13px',
+      color: '#f2ead3',
+    }
+
+    this.add
+      .text(left + width / 2, top + 14, 'MISSÕES DO DIA', {
+        ...style,
+        fontSize: '12px',
+        color: THEME.title,
+      })
+      .setOrigin(0.5)
+      .setDepth(6)
+
+    statuses.forEach(({ mission, progress, done }, index) => {
+      const y = top + 34 + index * lineHeight
+
+      this.add
+        .text(left + 10, y, done ? `✔ ${mission.title}` : `${mission.title}`, {
+          ...style,
+          color: done ? '#9fe870' : '#f2ead3',
+          wordWrap: { width: width - 20 },
+        })
+        .setOrigin(0, 0.5)
+        .setDepth(6)
+
+      if (!done) {
+        this.add
+          .text(left + width - 10, y, `${progress}/${mission.target}`, {
+            ...style,
+            color: THEME.title,
+          })
+          .setOrigin(1, 0.5)
+          .setDepth(6)
+      }
+    })
   }
 
-  private addInfoText(lines: string[]): void {
-    const text = this.add
-      .text(18, 14, lines, {
+  private addInfoText(lines: string[]): Phaser.GameObjects.Text {
+    return this.add
+      .text(INFO_X, 14, lines, {
         fontFamily: FONT_FAMILY,
         fontSize: '15px',
         color: '#f2ead3',
@@ -268,9 +308,6 @@ export class MenuScene extends Phaser.Scene {
         strokeThickness: 4,
       })
       .setDepth(5)
-
-    text.setInteractive({ useHandCursor: true })
-    text.on('pointerdown', () => this.scene.start(SCENE_KEYS.history))
   }
 
   /** Brilho vermelho dos olhos (gradiente) e faísca do pavio. */
