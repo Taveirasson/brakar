@@ -62,6 +62,7 @@ import {
 } from '../run/runState'
 import { unlockAchievements } from '../run/achievements'
 import { recordMissions } from '../run/missions'
+import { comboBonus } from '../run/combo'
 import { recordHistory } from '../run/history'
 import { OWL_COOLDOWN_MS, owlActive, owlShouldHoot } from '../run/owl'
 import { hunterGraceMs } from '../hunter/hunterSettings'
@@ -245,6 +246,8 @@ export class GameScene extends Phaser.Scene {
   private owlCooldownMs = 0
   private openingTimer?: Phaser.Time.TimerEvent
   private veteran = false
+  private lastFireflyAt: number | null = null
+  private comboBones = 0
   private lastHunterState = ''
   private alertMarker?: Phaser.GameObjects.Text
   private stamina: StaminaState = FULL_STAMINA
@@ -325,6 +328,8 @@ export class GameScene extends Phaser.Scene {
     this.owl = undefined
     this.owlCooldownMs = 0
     this.openingTimer = undefined
+    this.lastFireflyAt = null
+    this.comboBones = 0
     this.veteran = loadRecords().escapes >= COMPASS_VETERAN_ESCAPES
     this.lastHunterState = ''
     this.alertMarker = undefined
@@ -1599,6 +1604,30 @@ export class GameScene extends Phaser.Scene {
     this.showNotification('O ESCUDO SE QUEBROU! CORRA!', '#6bc5ff', 2000)
   }
 
+  /** Texto que sobe e some no mundo (ganhos de coleta). */
+  private floatPopup(x: number, y: number, text: string, color: string): void {
+    const label = this.add
+      .text(x, y - 6, text, {
+        fontFamily: FONT_FAMILY,
+        fontSize: '8px',
+        color,
+        stroke: '#050a07',
+        strokeThickness: 2,
+      })
+      .setOrigin(0.5)
+      .setDepth(40)
+
+    this.minimapCamera.ignore(label)
+    this.tweens.add({
+      targets: label,
+      y: label.y - 18,
+      alpha: 0,
+      duration: 1100,
+      ease: 'Cubic.Out',
+      onComplete: () => label.destroy(),
+    })
+  }
+
   private collectBone(bone: Phaser.Physics.Arcade.Image): void {
     if (!bone.active) {
       return
@@ -1611,6 +1640,7 @@ export class GameScene extends Phaser.Scene {
     bone.destroy()
     this.drawMinimap(this.getPlayerCell())
     this.bonesCollected++
+    this.floatPopup(bone.x, bone.y, '+1 osso', '#f2ead3')
     this.stamina = FULL_STAMINA
     this.showNotification('OSSO! FÔLEGO RECUPERADO', '#f2ead3', 1200)
   }
@@ -2076,6 +2106,7 @@ export class GameScene extends Phaser.Scene {
     const earned =
       bonesForRun(this.bonesCollected, escaped, this.night) +
       (escaped ? this.effects_.bonusBones : 0) +
+      this.comboBones +
       missionBones
     const wallet = addBones(earned)
 
@@ -2232,6 +2263,18 @@ export class GameScene extends Phaser.Scene {
     this.drawMinimap(this.getPlayerCell())
     this.collectedItems++
     this.tutorialEvent('firefly')
+    this.floatPopup(item.x, item.y, '+1', '#d9ff6b')
+
+    const combo = comboBonus(this.lastFireflyAt, this.elapsedMs)
+
+    this.lastFireflyAt = this.elapsedMs
+
+    if (combo > 0) {
+      this.comboBones += combo
+      this.time.delayedCall(250, () =>
+        this.floatPopup(item.x, item.y - 8, `COMBO +${combo} ossos`, '#ffd36a'),
+      )
+    }
 
     if (this.collectedItems >= this.requiredItems) {
       this.unlockExit()

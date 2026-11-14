@@ -27,6 +27,7 @@ export class HudScene extends Phaser.Scene {
   private hiddenLabel!: Phaser.GameObjects.Text
   private tutorialLabel?: Phaser.GameObjects.Text
   private compass?: Phaser.GameObjects.Triangle
+  private firefliesPips?: Phaser.GameObjects.Graphics
   private modifierLabel!: Phaser.GameObjects.Text
   private powerUpLabel!: Phaser.GameObjects.Text
   private danger = 0
@@ -122,6 +123,7 @@ export class HudScene extends Phaser.Scene {
       })
       .setOrigin(0.5)
       .setAlpha(0)
+    this.firefliesPips = this.add.graphics()
     this.fireflies = this.add.text(16, 38, '', {
       ...style,
       color: THEME.title,
@@ -235,6 +237,32 @@ export class HudScene extends Phaser.Scene {
     this.fireflies?.setText(
       required === null ? '' : `Vagalumes ${collected}/${required}`,
     )
+
+    const pips = this.firefliesPips
+
+    if (!pips || !this.fireflies) return
+
+    pips.clear()
+
+    if (required === null) return
+
+    // uma bolinha por vagalume: acesa quando já foi coletado
+    for (let i = 0; i < required; i++) {
+      const filled = i < collected
+
+      pips.fillStyle(filled ? 0xd9ff6b : 0x1f2a14, 1)
+      pips.lineStyle(2, 0xd9ff6b, filled ? 1 : 0.5)
+      pips.fillCircle(
+        this.fireflies.x + this.fireflies.width + 18 + i * 20,
+        this.fireflies.y + 11,
+        7,
+      )
+      pips.strokeCircle(
+        this.fireflies.x + this.fireflies.width + 18 + i * 20,
+        this.fireflies.y + 11,
+        7,
+      )
+    }
   }
 
   /** 0 = longe, 1 = encostando. */
