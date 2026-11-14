@@ -1501,19 +1501,53 @@ export class GameScene extends Phaser.Scene {
     this.showCollectedItemMessage()
   }
 
+  /** Explosão de coleta: anel que se expande, faíscas aditivas e um clarão. */
   private burstFirefly(x: number, y: number): void {
     const burst = this.add.particles(x, y, FIREFLY_TEXTURE, {
-      speed: { min: 20, max: 60 },
-      scale: { start: 0.8, end: 0 },
+      speed: { min: 40, max: 120 },
+      scale: { start: 1.3, end: 0 },
       alpha: { start: 1, end: 0 },
-      lifespan: 500,
-      quantity: 10,
+      lifespan: 650,
+      quantity: 18,
+      blendMode: 'ADD',
       emitting: false,
     })
+
     burst.setDepth(7)
     this.minimapCamera.ignore(burst)
-    burst.explode(10)
-    this.time.delayedCall(600, () => burst.destroy())
+    burst.explode(18)
+    this.time.delayedCall(800, () => burst.destroy())
+
+    const ring = this.add.graphics({ x, y }).setDepth(7)
+
+    ring.lineStyle(1.5, 0xfff2b0, 1)
+    ring.strokeCircle(0, 0, 6)
+    ring.setBlendMode(Phaser.BlendModes.ADD)
+    this.minimapCamera.ignore(ring)
+    this.tweens.add({
+      targets: ring,
+      scale: 5,
+      alpha: 0,
+      duration: 450,
+      ease: 'Cubic.Out',
+      onComplete: () => ring.destroy(),
+    })
+
+    const flash = this.add
+      .image(x, y, GLOW_TEXTURE)
+      .setDepth(7)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setScale(0.2)
+
+    this.minimapCamera.ignore(flash)
+    this.tweens.add({
+      targets: flash,
+      scale: 0.7,
+      alpha: 0,
+      duration: 350,
+      ease: 'Sine.Out',
+      onComplete: () => flash.destroy(),
+    })
   }
 
   private showCollectedItemMessage(): void {
