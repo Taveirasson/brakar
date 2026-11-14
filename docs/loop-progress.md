@@ -31,6 +31,7 @@ Feito:
 27. Pausa com botão SOM: LIGADO/DESLIGADO (útil no celular, sem tecla M) e layout de 4 botões. Testado no navegador.
 28. Minimapa útil: vagalumes (amarelo-limão), ossos (branco) e moitas (verde) aparecem nas células já visitadas e somem quando coletados. Testado no navegador.
 29. Recordes no menu: canto superior esquerdo mostra recorde de noite, melhor fuga, fugas/capturas e conquistas X/6 (só aparece depois da primeira partida). Testado no navegador.
+30. Celular/compartilhamento: favicon (🐕, tira o 404 do console), meta description e Open Graph, viewport sem zoom, CSS sem rolagem/seleção durante o jogo e aviso 'Gire o celular' em tela vertical de toque. Testado com emulação de celular.
 
 NOVO FOCO pedido pelo usuário: (a) paredes/labirinto com mais saídas, (b) visual: efeitos e sprites melhores, (c) história no começo (cutscene). Próximas: efeitos de partículas/sprites melhores (sprites do Pipoca/Estouro, sombras sob os personagens, partículas de coleta, reforçar visual da saída/estrada).
 
