@@ -9,15 +9,22 @@ import { addBackdrop, addPanel, addText, THEME } from '../ui/theme'
 export class GameOverScene extends Phaser.Scene {
   private night = 1
   private timeMs = 0
+  private achievements: string[] = []
   private records?: Records
 
   constructor() {
     super(SCENE_KEYS.gameOver)
   }
 
-  init(data: { night?: number; timeMs?: number; records?: Records }): void {
+  init(data: {
+    night?: number
+    timeMs?: number
+    records?: Records
+    achievements?: string[]
+  }): void {
     this.night = data.night ?? 1
     this.timeMs = data.timeMs ?? 0
+    this.achievements = data.achievements ?? []
     this.records = data.records
   }
 
@@ -42,6 +49,17 @@ export class GameOverScene extends Phaser.Scene {
       `Você não sobreviveu à noite ${this.night}.`,
       'body',
     )
+
+    if (this.achievements.length > 0) {
+      addText(
+        this,
+        centerX,
+        centerY + 22,
+        `🏆 ${this.achievements.join('  ·  ')}`,
+        'muted',
+        THEME.title,
+      )
+    }
 
     const best = this.records?.bestTimeMs
     addText(

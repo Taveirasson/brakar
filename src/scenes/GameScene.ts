@@ -41,6 +41,7 @@ import {
 import { hidingSpotOffset, pickHidingCells } from '../maze/HidingSpotPlacement'
 import { sfx, toggleMuted } from '../audio/sfx'
 import { getNight } from '../run/runState'
+import { unlockAchievements } from '../run/achievements'
 import { recordCaught, recordEscape } from '../run/records'
 import { NIGHT_LIGHTING } from '../vision/moonlight'
 import { Hunter } from '../hunter/Hunter'
@@ -156,6 +157,10 @@ export class GameScene extends Phaser.Scene {
   private hidingSpots: Phaser.GameObjects.Image[] = []
   private hidden = false
   private mudCells: MazeCell[] = []
+  private hides = 0
+  private bonesCollected = 0
+  private timesHunted = 0
+  private lastHunterState = ''
   private stamina: StaminaState = FULL_STAMINA
 
   private exitInformation!: FarthestCellResult
@@ -196,6 +201,10 @@ export class GameScene extends Phaser.Scene {
     this.hidingSpots = []
     this.hidden = false
     this.mudCells = []
+    this.hides = 0
+    this.bonesCollected = 0
+    this.timesHunted = 0
+    this.lastHunterState = ''
     this.night = getNight()
     this.hunterSettings = hunterSettingsForNight(this.night)
 
@@ -847,6 +856,7 @@ export class GameScene extends Phaser.Scene {
 
     const timeMs = Math.round(this.elapsedMs)
     const result = recordEscape(timeMs, this.night)
+    const achievements = this.earnAchievements(true, timeMs)
 
     this.physics.pause()
     this.cameras.main.flash(250, 244, 211, 94)
@@ -858,6 +868,7 @@ export class GameScene extends Phaser.Scene {
         timeMs,
         night: this.night,
         ...result,
+        achievements,
       })
     })
   }
@@ -1101,6 +1112,7 @@ export class GameScene extends Phaser.Scene {
     sfx.pickup()
     this.burstFirefly(bone.x, bone.y)
     bone.destroy()
+    this.bonesCollected++
     this.stamina = FULL_STAMINA
     this.showNotification('OSSO! FÔLEGO RECUPERADO', '#f2ead3', 1200)
   }
@@ -1135,6 +1147,7 @@ export class GameScene extends Phaser.Scene {
       (this.hidden || hunterDistance >= HIDING_MIN_HUNTER_DISTANCE)
 
     if (canHide && !this.hidden) {
+      this.hides++
       this.hunter?.loseTrack()
       sfx.rustle()
       this.tweens.add({
@@ -1202,6 +1215,12 @@ export class GameScene extends Phaser.Scene {
       perceivesPlayer,
     )
 
+    if (hunter.state === 'hunting' && this.lastHunterState !== 'hunting') {
+      this.timesHunted++
+    }
+
+    this.lastHunterState = hunter.state
+
     if (this.isPlayerCaught()) {
       this.catchPlayer()
     }
@@ -1229,6 +1248,7 @@ export class GameScene extends Phaser.Scene {
     sfx.caught()
     const timeMs = Math.round(this.elapsedMs)
     const records = recordCaught(this.night)
+    const achievements = this.earnAchievements(false, timeMs)
     this.effects?.stop()
     this.player.setVelocity(0, 0)
 
@@ -1243,8 +1263,21 @@ export class GameScene extends Phaser.Scene {
         night: this.night,
         timeMs,
         records,
+        achievements,
       })
     })
+  }
+
+  /** Confere as conquistas da tentativa e devolve os títulos das novas. */
+  private earnAchievements(escaped: boolean, timeMs: number): string[] {
+    return unlockAchievements({
+      escaped,
+      night: this.night,
+      timeMs,
+      hides: this.hides,
+      bones: this.bonesCollected,
+      timesHunted: this.timesHunted,
+    }).map((achievement) => achievement.title)
   }
 
   private turnOffWorldLights(): void {

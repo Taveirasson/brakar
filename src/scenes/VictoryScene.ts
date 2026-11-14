@@ -11,6 +11,7 @@ export class VictoryScene extends Phaser.Scene {
   private records?: Records
   private isNewBest = false
   private night = 1
+  private achievements: string[] = []
 
   constructor() {
     super(SCENE_KEYS.victory)
@@ -21,11 +22,13 @@ export class VictoryScene extends Phaser.Scene {
     records?: Records
     isNewBest?: boolean
     night?: number
+    achievements?: string[]
   }): void {
     this.timeMs = data.timeMs ?? 0
     this.records = data.records
     this.isNewBest = data.isNewBest ?? false
     this.night = data.night ?? 1
+    this.achievements = data.achievements ?? []
   }
 
   create(): void {
@@ -69,6 +72,17 @@ export class VictoryScene extends Phaser.Scene {
       this.isNewBest ? 'body' : 'muted',
       this.isNewBest ? THEME.title : undefined,
     )
+
+    if (this.achievements.length > 0) {
+      addText(
+        this,
+        centerX,
+        centerY + 42,
+        `🏆 ${this.achievements.join('  ·  ')}`,
+        'muted',
+        THEME.title,
+      )
+    }
 
     createTextButton({
       scene: this,
