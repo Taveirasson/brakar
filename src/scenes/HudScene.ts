@@ -12,6 +12,7 @@ import { FONT_FAMILY, THEME } from '../ui/theme'
 const VIGNETTE_TEXTURE = 'danger-vignette'
 
 const JOYSTICK = { x: 120, y: 420, radius: 62, knob: 26 }
+const PAUSE_BUTTON_Y = 130
 const SPRINT_BUTTON = { x: 840, y: 430, radius: 46 }
 
 /** Camada fixa por cima do jogo: cronômetro, vagalumes e vinheta de perigo. */
@@ -60,12 +61,21 @@ export class HudScene extends Phaser.Scene {
       color: THEME.muted,
     })
     this.staminaBar = this.add.graphics()
-    this.add.text(16, 86, 'SHIFT: correr  ·  moitas escondem  ·  M: som', {
-      ...style,
-      fontSize: '13px',
-      strokeThickness: 3,
-      color: THEME.muted,
-    })
+    const isTouch = this.sys.game.device.input.touch
+
+    this.add.text(
+      16,
+      86,
+      isTouch
+        ? 'moitas escondem  ·  ossos dão fôlego'
+        : 'SHIFT: correr  ·  moitas escondem  ·  M: som',
+      {
+        ...style,
+        fontSize: '13px',
+        strokeThickness: 3,
+        color: THEME.muted,
+      },
+    )
     if (this.sys.game.device.input.touch) {
       this.enableTouchControls()
     }
@@ -263,6 +273,23 @@ export class HudScene extends Phaser.Scene {
         sprint.setFillStyle(0x9fe870, 0.3)
       })
     }
+
+    const pause = this.add
+      .circle(this.scale.width - 52, PAUSE_BUTTON_Y, 22, 0x050a07, 0.45)
+      .setStrokeStyle(2, 0xe8c766, 0.6)
+      .setInteractive()
+
+    this.add
+      .text(this.scale.width - 52, PAUSE_BUTTON_Y, 'II', {
+        fontFamily: FONT_FAMILY,
+        fontSize: '18px',
+        color: THEME.title,
+      })
+      .setOrigin(0.5)
+
+    pause.on('pointerdown', () => {
+      this.events.emit('pause-request')
+    })
 
     base.setDepth(50)
     knob.setDepth(51)

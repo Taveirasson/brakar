@@ -1687,7 +1687,13 @@ export class GameScene extends Phaser.Scene {
     this.scene.launch(SCENE_KEYS.hud)
     this.scene.bringToTop(SCENE_KEYS.hud)
 
+    // botão de pausa do HUD (toque): não existe ESC no celular
+    const hud = this.scene.get(SCENE_KEYS.hud)
+
+    hud.events.on('pause-request', this.pauseGame, this)
+
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      hud.events.off('pause-request', this.pauseGame, this)
       sfx.stopDrone()
       this.scene.stop(SCENE_KEYS.hud)
     })
