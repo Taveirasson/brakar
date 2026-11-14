@@ -77,6 +77,7 @@ function createFogTexture(scene: Phaser.Scene): void {
   context.fillStyle = gradient
   context.fillRect(0, 0, size, size)
   texture.refresh()
+  texture.setFilter(Phaser.Textures.FilterMode.LINEAR)
 }
 
 /** Folha pequena (elipse); a cor vem do tint de cada partícula. */

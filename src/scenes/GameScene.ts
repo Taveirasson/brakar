@@ -77,6 +77,8 @@ import {
   HEADLIGHTS_TEXTURE,
   createFireflyTexture,
   createBoneTexture,
+  createGlowTexture,
+  GLOW_TEXTURE,
   BONE_TEXTURE,
   createHeadlightsTexture,
 } from '../characters/forestProps'
@@ -104,6 +106,8 @@ const HIDING_RADIUS = 26
 const HIDING_MIN_HUNTER_DISTANCE = CELL_PITCH
 const HIDING_SPOTS_PER_CELL_ROW = 0.6
 const BUSH_SCALE = 1.25
+const EXIT_GLOW_LOCKED_SCALE = 1.1
+const EXIT_GLOW_OPEN_SCALE = 3.2
 
 // Labirinto: metade dos becos ganha saída e há passagens extras nas paredes.
 const DEAD_END_OPEN_CHANCE = 0.5
@@ -159,6 +163,7 @@ export class GameScene extends Phaser.Scene {
   private inputDirection = { h: 0, v: 0 }
   private exit!: Phaser.Physics.Arcade.Image
   private exitBlink?: Phaser.Tweens.Tween
+  private exitGlow?: Phaser.GameObjects.Image
 
   private cursorKeys!: Phaser.Types.Input.Keyboard.CursorKeys
   private wasdKeys!: MovementKeys
@@ -685,6 +690,25 @@ export class GameScene extends Phaser.Scene {
       duration: 700,
       yoyo: true,
       repeat: -1,
+    })
+
+    // halo do farol: fraco enquanto a saída está trancada, forte depois de
+    // destrancar (serve de guia para achar a estrada de longe)
+    createGlowTexture(this)
+    this.exitGlow = this.add
+      .image(exitPosition.x, exitPosition.y, GLOW_TEXTURE)
+      .setDepth(4)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setScale(EXIT_GLOW_LOCKED_SCALE)
+      .setAlpha(0.18)
+
+    this.tweens.add({
+      targets: this.exitGlow,
+      alpha: { from: 0.1, to: 0.3 },
+      duration: 900,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
     })
   }
 
@@ -1514,6 +1538,28 @@ export class GameScene extends Phaser.Scene {
       HEADLIGHT_COLOR,
       HEADLIGHT_LIGHT_INTENSITY,
     )
+
+    if (this.exitGlow) {
+      this.tweens.killTweensOf(this.exitGlow)
+      this.exitGlow.setAlpha(0.7)
+      this.tweens.add({
+        targets: this.exitGlow,
+        scale: { from: EXIT_GLOW_LOCKED_SCALE, to: EXIT_GLOW_OPEN_SCALE },
+        duration: 600,
+        ease: 'Back.Out',
+        onComplete: () => {
+          this.tweens.add({
+            targets: this.exitGlow,
+            alpha: { from: 0.55, to: 0.9 },
+            scale: EXIT_GLOW_OPEN_SCALE * 1.1,
+            duration: 800,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut',
+          })
+        },
+      })
+    }
 
     this.cameras.main.flash(250, 255, 242, 176)
 

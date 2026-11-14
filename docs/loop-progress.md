@@ -17,6 +17,7 @@ Feito:
 14. Visual: folhas caindo em volta do Pipoca (cores variadas), névoa rasteira à deriva e brilho vermelho/laranja pulsante no Estouro que ilumina chão e árvores (mais forte caçando). Em GameEffects. Testado no navegador.
 15. Confete colorido na tela de vitória e fade-in ao entrar no jogo. Testado no navegador.
 DESCARTADO pelo usuário: sombras no chão sob Pipoca/Estouro (ficaram ruins; revertido). Não repetir.
+16. Farol da saída com halo luminoso: fraco e pulsante trancado; ao destrancar cresce e brilha forte (guia para achar a estrada de longe). Testado no navegador.
 
 NOVO FOCO pedido pelo usuário: (a) paredes/labirinto com mais saídas, (b) visual: efeitos e sprites melhores, (c) história no começo (cutscene). Próximas: efeitos de partículas/sprites melhores (sprites do Pipoca/Estouro, sombras sob os personagens, partículas de coleta, reforçar visual da saída/estrada).
 

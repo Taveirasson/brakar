@@ -84,3 +84,37 @@ export function createBoneTexture(scene: Phaser.Scene): void {
   graphics.generateTexture(BONE_TEXTURE, 18, 14)
   graphics.destroy()
 }
+
+export const GLOW_TEXTURE = 'exit-glow'
+
+/** Halo amarelo macio (gradiente radial) para o farol da saída. */
+export function createGlowTexture(scene: Phaser.Scene): void {
+  if (scene.textures.exists(GLOW_TEXTURE)) {
+    return
+  }
+
+  const size = 128
+  const texture = scene.textures.createCanvas(GLOW_TEXTURE, size, size)
+  const context = texture?.getContext()
+
+  if (!texture || !context) {
+    return
+  }
+
+  const gradient = context.createRadialGradient(
+    size / 2,
+    size / 2,
+    0,
+    size / 2,
+    size / 2,
+    size / 2,
+  )
+  gradient.addColorStop(0, 'rgba(255, 242, 176, 0.95)')
+  gradient.addColorStop(0.35, 'rgba(255, 220, 120, 0.45)')
+  gradient.addColorStop(1, 'rgba(255, 200, 80, 0)')
+  context.fillStyle = gradient
+  context.fillRect(0, 0, size, size)
+  texture.refresh()
+  // filtro linear: com pixelArt o gradiente ampliado formaria anéis
+  texture.setFilter(Phaser.Textures.FilterMode.LINEAR)
+}
