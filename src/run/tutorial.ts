@@ -14,14 +14,14 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     touchText: 'USE O JOYSTICK PARA ANDAR',
   },
   {
+    event: 'firefly',
+    text: 'SIGA A SETA E PEGUE UM VAGALUME',
+    touchText: 'SIGA A SETA E PEGUE UM VAGALUME',
+  },
+  {
     event: 'sprinted',
     text: 'SEGURE SHIFT PARA CORRER',
     touchText: 'SEGURE CORRER PARA DISPARAR',
-  },
-  {
-    event: 'firefly',
-    text: 'PEGUE UM VAGALUME AMARELO',
-    touchText: 'PEGUE UM VAGALUME AMARELO',
   },
   {
     event: 'hid',

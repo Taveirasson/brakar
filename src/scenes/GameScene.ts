@@ -183,7 +183,7 @@ const EXTRA_OPENINGS_PER_ROW = 0.8
 const ALERT_OFFSET_Y = 18
 
 const TIPS_KEY = 'brakar-tips-seen'
-const TIPS_MAX_RUNS = 2
+const TIPS_MAX_RUNS = 1
 
 // Lama: poças que freiam o Pipoca (um pouco) e o Estouro (muito).
 const MUD_CELLS_PER_CELL_ROW = 0.7
@@ -1344,7 +1344,6 @@ export class GameScene extends Phaser.Scene {
       return
     }
 
-    this.showNotification('O ESTOURO ESTÁ SOLTO! FUJA DELE', '#ff9b9b', 2400)
     this.showNotification('SHIFT CORRE, MAS O FÔLEGO ACABA', '#9fe870', 2400)
     this.showNotification(
       'MOITAS ESCONDEM · OSSOS DÃO FÔLEGO · LAMA FREIA',
@@ -2367,6 +2366,14 @@ export class GameScene extends Phaser.Scene {
 
   private unlockExit(): void {
     sfx.unlock()
+
+    if (this.tutorial) {
+      // pegou todos os vagalumes: o jogador já sabe jogar
+      markTutorialDone()
+      this.tutorial = undefined
+      ;(this.scene.get(SCENE_KEYS.hud) as HudScene).setTutorial(null)
+    }
+
     this.gamePhase = 'returningToExit'
 
     // O farol acende de vez: para de piscar e passa a iluminar a clareira.
