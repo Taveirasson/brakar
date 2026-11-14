@@ -14,7 +14,7 @@ export const DIFFICULTY_LABELS: Record<Difficulty, string> = {
 const STORAGE_KEY = 'brakar-difficulty'
 
 /** O Estouro nunca passa de 97% da velocidade do Pipoca, em nenhuma dificuldade. */
-const MAX_HUNT_SPEED = 107 * MOVEMENT_SCALE
+export const MAX_HUNT_SPEED = 107 * MOVEMENT_SCALE
 
 const FACTORS: Record<Difficulty, { speed: number; sight: number }> = {
   easy: { speed: 0.85, sight: 0.75 },

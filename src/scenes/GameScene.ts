@@ -52,6 +52,15 @@ import { getGameMode, getNight, type GameMode } from '../run/runState'
 import { unlockAchievements } from '../run/achievements'
 import { loadRecords, recordCaught, recordEscape } from '../run/records'
 import { NIGHT_LIGHTING } from '../vision/moonlight'
+import {
+  applyModifiersToHunter,
+  applyModifiersToLighting,
+  combineModifiers,
+  NEUTRAL_EFFECTS,
+  pickModifiers,
+  type Modifier,
+  type ModifierEffects,
+} from '../run/modifiers'
 import { Hunter } from '../hunter/Hunter'
 import { GameEffects } from '../effects/GameEffects'
 import { canPerceivePlayer, isCaught } from '../hunter/hunterPerception'
@@ -204,6 +213,9 @@ export class GameScene extends Phaser.Scene {
   private night = 1
   private mode: GameMode = 'normal'
   private random: () => number = Math.random
+  private modifiers: Modifier[] = []
+  private effects_: ModifierEffects = NEUTRAL_EFFECTS
+  private lighting = NIGHT_LIGHTING
 
   private visitedCells = new Set<string>()
   /** Vagalumes, ossos e moitas já vistos, para aparecerem no minimapa. */
@@ -248,9 +260,19 @@ export class GameScene extends Phaser.Scene {
     this.lastHunterState = ''
     this.alertMarker = undefined
     this.night = this.mode === 'daily' ? 1 : getNight()
-    this.hunterSettings = applyDifficulty(
-      hunterSettingsForNight(this.night),
-      this.mode === 'daily' ? 'normal' : getDifficulty(),
+    this.modifiers = pickModifiers(
+      this.night,
+      this.random,
+      this.mode === 'daily',
+    )
+    this.effects_ = combineModifiers(this.modifiers)
+    this.lighting = applyModifiersToLighting(NIGHT_LIGHTING, this.effects_)
+    this.hunterSettings = applyModifiersToHunter(
+      applyDifficulty(
+        hunterSettingsForNight(this.night),
+        this.mode === 'daily' ? 'normal' : getDifficulty(),
+      ),
+      this.effects_,
     )
 
     this.gamePhase = 'litExploration'
@@ -1048,7 +1070,7 @@ export class GameScene extends Phaser.Scene {
 
     visibilityMask.clear()
 
-    visibilityMask.fillStyle(0xffffff, NIGHT_LIGHTING.worldVisibility)
+    visibilityMask.fillStyle(0xffffff, this.lighting.worldVisibility)
 
     // cobre também a mata em volta do labirinto
     const margin = OUTER_FOREST_TILES * TILE_SIZE
@@ -1069,7 +1091,7 @@ export class GameScene extends Phaser.Scene {
       visibilityMask.fillCircle(
         this.player.x,
         this.player.y,
-        NIGHT_LIGHTING.visionRadius * scale,
+        this.lighting.visionRadius * scale,
       )
     }
   }
@@ -1089,7 +1111,20 @@ export class GameScene extends Phaser.Scene {
     const bushCells = this.spawnHidingSpots(itemCells)
     this.spawnBones([...itemCells, ...bushCells])
     this.spawnHunter()
+    this.announceModifiers()
     this.showTips()
+  }
+
+  /** Avisa os modificadores da noite (e o bônus de ossos por eles). */
+  private announceModifiers(): void {
+    for (const modifier of this.modifiers) {
+      this.showNotification(
+        `${modifier.name.toUpperCase()}: ${modifier.description}` +
+          (modifier.bonusBones > 0 ? `  (+${modifier.bonusBones} ossos)` : ''),
+        '#ffd36a',
+        2600,
+      )
+    }
   }
 
   /** Dicas nas duas primeiras partidas; depois o jogador já sabe jogar. */
@@ -1163,7 +1198,10 @@ export class GameScene extends Phaser.Scene {
     const cells = pickHidingCells(
       this.maze,
       [{ row: 0, column: 0 }, this.exitInformation.cell],
-      Math.max(3, Math.round(this.mazeSize * MUD_CELLS_PER_CELL_ROW)),
+      Math.max(
+        3,
+        Math.round(this.mazeSize * MUD_CELLS_PER_CELL_ROW * this.effects_.mud),
+      ),
       this.random,
     )
 
@@ -1213,6 +1251,10 @@ export class GameScene extends Phaser.Scene {
 
   /** Ossos nos corredores: devolvem o fôlego todo. */
   private spawnBones(usedCells: MazeCell[]): void {
+    if (this.effects_.noBones) {
+      return
+    }
+
     createBoneTexture(this)
 
     const cells = pickHidingCells(
@@ -1535,7 +1577,9 @@ export class GameScene extends Phaser.Scene {
 
   /** Guarda na carteira os ossos desta tentativa (coletados + bônus de fuga). */
   private bankBones(escaped: boolean): { earned: number; total: number } {
-    const earned = bonesForRun(this.bonesCollected, escaped, this.night)
+    const earned =
+      bonesForRun(this.bonesCollected, escaped, this.night) +
+      (escaped ? this.effects_.bonusBones : 0)
     const wallet = addBones(earned)
 
     return { earned, total: wallet.bones }
@@ -1554,7 +1598,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private turnOffWorldLights(): void {
-    this.lights.setAmbientColor(NIGHT_LIGHTING.ambientColor)
+    this.lights.setAmbientColor(this.lighting.ambientColor)
 
     if (!this.visibilityMaskCreated) {
       this.createVisibilityMask()
@@ -1789,6 +1833,7 @@ export class GameScene extends Phaser.Scene {
 
     hud.setTime(this.elapsedMs)
     hud.setNight(this.night, this.mode === 'daily')
+    hud.setModifiers(this.modifiers.map((modifier) => modifier.name))
     hud.setHidden(this.hidden)
     hud.setStamina(this.stamina.value, this.stamina.exhausted)
     hud.setFireflies(this.collectedItems, searching ? this.requiredItems : null)

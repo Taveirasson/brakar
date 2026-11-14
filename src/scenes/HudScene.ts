@@ -25,6 +25,7 @@ export class HudScene extends Phaser.Scene {
   private staminaValue = 1
   private staminaExhausted = false
   private hiddenLabel!: Phaser.GameObjects.Text
+  private modifierLabel!: Phaser.GameObjects.Text
   private danger = 0
   private nextBeatAt = 0
   private touchEnabled = false
@@ -80,6 +81,12 @@ export class HudScene extends Phaser.Scene {
       this.enableTouchControls()
     }
 
+    this.modifierLabel = this.add.text(16, 124, '', {
+      ...style,
+      fontSize: '14px',
+      strokeThickness: 3,
+      color: '#ffd36a',
+    })
     this.hiddenLabel = this.add
       .text(this.scale.width / 2, this.scale.height - 40, 'ESCONDIDO', {
         ...style,
@@ -130,6 +137,12 @@ export class HudScene extends Phaser.Scene {
     bar.fillRoundedRect(16, 106, width + 4, 10, 4)
     bar.fillStyle(color, 1)
     bar.fillRoundedRect(18, 108, Math.max(0, width * this.staminaValue), 6, 3)
+  }
+
+  setModifiers(names: string[]): void {
+    this.modifierLabel?.setText(
+      names.length > 0 ? `⚠ ${names.join('  ·  ')}` : '',
+    )
   }
 
   setHidden(hidden: boolean): void {
