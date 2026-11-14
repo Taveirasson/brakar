@@ -1,6 +1,7 @@
 import Phaser from 'phaser'
 import { SCENE_KEYS } from '../config/sceneKeys'
 import { createTextButton } from '../ui/createTextButton'
+import { enableKeyboardMenu } from '../ui/menuNavigation'
 import {
   getSavedMazeSize,
   MAZE_SIZES,
@@ -90,7 +91,7 @@ export class ConfigurationScene extends Phaser.Scene {
       },
     })
 
-    createTextButton({
+    const saveButton = createTextButton({
       scene: this,
       x: centerX,
       y: centerY + 105,
@@ -112,6 +113,11 @@ export class ConfigurationScene extends Phaser.Scene {
       onClick: () => {
         this.returnToMenu()
       },
+    })
+
+    enableKeyboardMenu(this, {
+      primary: saveButton,
+      onBack: () => this.returnToMenu(),
     })
   }
 

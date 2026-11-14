@@ -2,6 +2,7 @@ import Phaser from 'phaser'
 import { isMuted, toggleMuted } from '../audio/sfx'
 import { resetNight } from '../run/runState'
 import { SCENE_KEYS } from '../config/sceneKeys'
+import { enableKeyboardMenu } from '../ui/menuNavigation'
 import { setGameHudVisible } from '../ui/overlayHud'
 import { createTextButton } from '../ui/createTextButton'
 import { addBackdrop, addPanel, addText } from '../ui/theme'
@@ -63,6 +64,7 @@ export class PauseScene extends Phaser.Scene {
     })
 
     this.configureKeyboard()
+    enableKeyboardMenu(this)
   }
 
   private configureKeyboard(): void {

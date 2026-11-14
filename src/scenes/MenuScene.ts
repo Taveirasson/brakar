@@ -9,6 +9,7 @@ import { loadMissions, missionStatuses } from '../run/missions'
 import { loadWallet } from '../run/wallet'
 import { resetNight, resetOpening, setGameMode } from '../run/runState'
 import { FONT_FAMILY, THEME, addText } from '../ui/theme'
+import { enableKeyboardMenu } from '../ui/menuNavigation'
 import {
   FIREFLY_TEXTURE,
   createFireflyTexture,
@@ -69,7 +70,7 @@ export class MenuScene extends Phaser.Scene {
       'body',
     ).setStroke('#050a07', 5)
 
-    createTextButton({
+    const startButton = createTextButton({
       scene: this,
       x: buttonsX,
       y: 300,
@@ -138,6 +139,8 @@ export class MenuScene extends Phaser.Scene {
         this.openConfigScene()
       },
     })
+
+    enableKeyboardMenu(this, { primary: startButton })
   }
 
   /** Ilustração de fundo (cobre a tela inteira) e vagalumes flutuando. */

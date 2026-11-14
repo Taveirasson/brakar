@@ -3,6 +3,7 @@ import { SCENE_KEYS } from '../config/sceneKeys'
 import { pickBoonChoices } from '../run/boons'
 import { addBoon, getBoons, getNight } from '../run/runState'
 import { createTextButton } from '../ui/createTextButton'
+import { enableKeyboardMenu } from '../ui/menuNavigation'
 import { addBackdrop, addPanel, addText, THEME } from '../ui/theme'
 
 /** Antes de cada noite (a partir da 2): escolha 1 de 3 bênçãos para o resto da corrida. */
@@ -33,6 +34,13 @@ export class BoonScene extends Phaser.Scene {
         onClick: () => this.pick(boon.id),
       })
       addText(this, centerX, y + 40, boon.description, 'muted', THEME.title)
+    })
+
+    enableKeyboardMenu(this)
+
+    // atalhos 1, 2 e 3 escolhem direto
+    choices.forEach((boon, index) => {
+      this.input.keyboard?.on(`keydown-${index + 1}`, () => this.pick(boon.id))
     })
 
     this.cameras.main.fadeIn(250, 5, 10, 7)

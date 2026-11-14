@@ -1,6 +1,15 @@
 import Phaser from 'phaser'
 import { FONT_FAMILY, THEME } from './theme'
 
+/** Botões de cada cena, na ordem de criação (usado pela navegação por teclado). */
+const registry = new WeakMap<Phaser.Scene, Phaser.GameObjects.Container[]>()
+
+export function sceneButtons(
+  scene: Phaser.Scene,
+): Phaser.GameObjects.Container[] {
+  return (registry.get(scene) ?? []).filter((button) => button.active)
+}
+
 export type CreateButtonProps = {
   scene: Phaser.Scene
   x: number
@@ -63,6 +72,7 @@ export function createTextButton({
 
   const button = scene.add.container(x, y, [background, text])
   button.setSize(width, height)
+  registry.set(scene, [...(registry.get(scene) ?? []), button])
   button.setInteractive({ useHandCursor: true })
 
   button.on('pointerover', () => {
@@ -78,6 +88,14 @@ export function createTextButton({
   })
 
   button.on('pointerdown', onClick)
+
+  // foco por teclado (ui/menuNavigation): mesmo destaque do mouse
+  button.setData('activate', onClick)
+  button.setData('focus', (on: boolean) => {
+    draw(on)
+    text.setColor(on ? THEME.title : THEME.text)
+    scene.tweens.add({ targets: button, scale: on ? 1.05 : 1, duration: 120 })
+  })
 
   return button
 }
