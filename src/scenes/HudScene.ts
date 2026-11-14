@@ -1,6 +1,7 @@
 import Phaser from 'phaser'
 import { SCENE_KEYS } from '../config/sceneKeys'
 import { formatTime } from '../run/records'
+import { sfx } from '../audio/sfx'
 import { FONT_FAMILY, THEME } from '../ui/theme'
 
 const VIGNETTE_TEXTURE = 'danger-vignette'
@@ -16,6 +17,7 @@ export class HudScene extends Phaser.Scene {
   private staminaExhausted = false
   private hiddenLabel!: Phaser.GameObjects.Text
   private danger = 0
+  private nextBeatAt = 0
 
   constructor() {
     super(SCENE_KEYS.hud)
@@ -23,6 +25,7 @@ export class HudScene extends Phaser.Scene {
 
   create(): void {
     this.danger = 0
+    this.nextBeatAt = 0
     this.createVignetteTexture()
 
     this.vignette = this.add
@@ -46,7 +49,7 @@ export class HudScene extends Phaser.Scene {
       color: THEME.muted,
     })
     this.staminaBar = this.add.graphics()
-    this.add.text(16, 86, 'SHIFT: correr  ·  moitas escondem', {
+    this.add.text(16, 86, 'SHIFT: correr  ·  moitas escondem  ·  M: som', {
       ...style,
       fontSize: '13px',
       strokeThickness: 3,
@@ -70,6 +73,11 @@ export class HudScene extends Phaser.Scene {
     const pulse = 0.75 + 0.25 * Math.sin(time / (260 - this.danger * 120))
 
     this.vignette?.setAlpha(this.danger * pulse)
+
+    if (this.danger > 0.15 && time >= this.nextBeatAt) {
+      sfx.heartbeat(this.danger)
+      this.nextBeatAt = time + 1100 - this.danger * 600
+    }
   }
 
   setTime(ms: number): void {

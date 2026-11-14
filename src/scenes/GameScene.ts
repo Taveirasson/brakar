@@ -39,6 +39,7 @@ import {
   type StaminaState,
 } from '../player/stamina'
 import { hidingSpotOffset, pickHidingCells } from '../maze/HidingSpotPlacement'
+import { sfx, toggleMuted } from '../audio/sfx'
 import { getNight } from '../run/runState'
 import { recordCaught, recordEscape } from '../run/records'
 import { NIGHT_LIGHTING } from '../vision/moonlight'
@@ -698,6 +699,10 @@ export class GameScene extends Phaser.Scene {
       right: Phaser.Input.Keyboard.KeyCodes.D,
     }) as MovementKeys
 
+    this.input.keyboard.on('keydown-M', () => {
+      toggleMuted()
+    })
+
     this.sprintKey = this.input.keyboard.addKey(
       Phaser.Input.Keyboard.KeyCodes.SHIFT,
     )
@@ -834,6 +839,8 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.gamePhase = 'victory'
+    sfx.stopDrone()
+    sfx.victory()
     this.effects?.stop()
     this.playerFoundExit = true
     this.player.setVelocity(0, 0)
@@ -944,6 +951,7 @@ export class GameScene extends Phaser.Scene {
     this.collectedItems = 0
 
     this.turnOffWorldLights()
+    sfx.startDrone()
     this.resetMinimap()
     const itemCells = this.spawnRequiredItems()
     const bushCells = this.spawnHidingSpots(itemCells)
@@ -1090,6 +1098,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.tweens.killTweensOf(bone)
+    sfx.pickup()
     this.burstFirefly(bone.x, bone.y)
     bone.destroy()
     this.stamina = FULL_STAMINA
@@ -1127,6 +1136,7 @@ export class GameScene extends Phaser.Scene {
 
     if (canHide && !this.hidden) {
       this.hunter?.loseTrack()
+      sfx.rustle()
       this.tweens.add({
         targets: inBush,
         angle: { from: -6, to: 6 },
@@ -1215,6 +1225,8 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.gamePhase = 'defeat'
+    sfx.stopDrone()
+    sfx.caught()
     const timeMs = Math.round(this.elapsedMs)
     const records = recordCaught(this.night)
     this.effects?.stop()
@@ -1321,6 +1333,7 @@ export class GameScene extends Phaser.Scene {
       return
     }
 
+    sfx.pickup()
     this.burstFirefly(item.x, item.y)
     this.tweens.killTweensOf(item)
     this.lights.removeLight(glow)
@@ -1359,6 +1372,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private unlockExit(): void {
+    sfx.unlock()
     this.gamePhase = 'returningToExit'
 
     // O farol acende de vez: para de piscar e passa a iluminar a clareira.
@@ -1386,6 +1400,7 @@ export class GameScene extends Phaser.Scene {
     this.scene.bringToTop(SCENE_KEYS.hud)
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      sfx.stopDrone()
       this.scene.stop(SCENE_KEYS.hud)
     })
   }
