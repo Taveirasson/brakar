@@ -53,6 +53,14 @@ import { unlockAchievements } from '../run/achievements'
 import { loadRecords, recordCaught, recordEscape } from '../run/records'
 import { NIGHT_LIGHTING } from '../vision/moonlight'
 import {
+  POWER_UPS,
+  SHIELD_GRACE_MS,
+  SHIELD_STUN_MS,
+  SPEED_BOOST,
+  pickPowerUpTypes,
+  type PowerUpId,
+} from '../run/powerups'
+import {
   applyModifiersToHunter,
   applyModifiersToLighting,
   combineModifiers,
@@ -92,6 +100,8 @@ import {
   HEADLIGHTS_TEXTURE,
   createFireflyTexture,
   createBoneTexture,
+  createPowerUpTextures,
+  powerUpTextureKey,
   createGlowTexture,
   GLOW_TEXTURE,
   BONE_TEXTURE,
@@ -121,6 +131,7 @@ const HIDING_RADIUS = 26
 const HIDING_MIN_HUNTER_DISTANCE = CELL_PITCH
 const HIDING_SPOTS_PER_CELL_ROW = 0.6
 const BUSH_SCALE = 1.25
+const POWER_UPS_PER_CELL_ROW = 0.3
 const DAILY_MAZE_SIZE = 10
 
 // Pipoca com medo: treme quando o Estouro chega perto.
@@ -214,6 +225,10 @@ export class GameScene extends Phaser.Scene {
   private mode: GameMode = 'normal'
   private random: () => number = Math.random
   private modifiers: Modifier[] = []
+  private shieldActive = false
+  private shieldRing?: Phaser.GameObjects.Arc
+  private speedUntil = 0
+  private graceUntil = 0
   private effects_: ModifierEffects = NEUTRAL_EFFECTS
   private lighting = NIGHT_LIGHTING
 
@@ -254,6 +269,10 @@ export class GameScene extends Phaser.Scene {
     this.hidden = false
     this.mudCells = []
     this.minimapMarkers = []
+    this.shieldActive = false
+    this.shieldRing = undefined
+    this.speedUntil = 0
+    this.graceUntil = 0
     this.hides = 0
     this.bonesCollected = 0
     this.timesHunted = 0
@@ -932,7 +951,10 @@ export class GameScene extends Phaser.Scene {
       ? MUD_PLAYER_SPEED
       : 1
     const topSpeed =
-      PLAYER_SPEED * (step.sprinting ? SPRINT_MULTIPLIER : 1) * mudFactor
+      PLAYER_SPEED *
+      (step.sprinting ? SPRINT_MULTIPLIER : 1) *
+      (this.elapsedMs < this.speedUntil ? SPEED_BOOST : 1) *
+      mudFactor
     const speed = isMovingDiagonally ? topSpeed / Math.SQRT2 : topSpeed
 
     if (horizontalDirection !== 0) {
@@ -1109,7 +1131,8 @@ export class GameScene extends Phaser.Scene {
     this.resetMinimap()
     const itemCells = this.spawnRequiredItems()
     const bushCells = this.spawnHidingSpots(itemCells)
-    this.spawnBones([...itemCells, ...bushCells])
+    const boneCells = this.spawnBones([...itemCells, ...bushCells])
+    this.spawnPowerUps([...itemCells, ...bushCells, ...boneCells])
     this.spawnHunter()
     this.announceModifiers()
     this.showTips()
@@ -1250,9 +1273,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   /** Ossos nos corredores: devolvem o fôlego todo. */
-  private spawnBones(usedCells: MazeCell[]): void {
+  private spawnBones(usedCells: MazeCell[]): MazeCell[] {
     if (this.effects_.noBones) {
-      return
+      return []
     }
 
     createBoneTexture(this)
@@ -1295,6 +1318,138 @@ export class GameScene extends Phaser.Scene {
         this.collectBone(bone)
       })
     }
+
+    return cells
+  }
+
+  /** Power-ups espalhados nos corredores: escudo, pata veloz e mapa da mata. */
+  private spawnPowerUps(usedCells: MazeCell[]): void {
+    createPowerUpTextures(
+      this,
+      Object.values(POWER_UPS).map((powerUp) => ({
+        id: powerUp.id,
+        color: powerUp.color,
+      })),
+    )
+
+    const cells = pickHidingCells(
+      this.maze,
+      [
+        { row: 0, column: 0 },
+        this.exitInformation.cell,
+        ...usedCells,
+        ...this.mudCells,
+      ],
+      Math.max(2, Math.round(this.mazeSize * POWER_UPS_PER_CELL_ROW)),
+      this.random,
+    )
+    const types = pickPowerUpTypes(cells.length, this.random)
+
+    cells.forEach((cell, index) => {
+      const powerUp = POWER_UPS[types[index]]
+      const position = this.getCellCenter(cell.row, cell.column)
+      const orb = this.physics.add.staticImage(
+        position.x,
+        position.y,
+        powerUpTextureKey(powerUp.id),
+      )
+
+      orb.setDepth(6)
+      ;(orb.body as Phaser.Physics.Arcade.StaticBody).setSize(16, 16)
+      this.minimapCamera.ignore(orb)
+      this.minimapMarkers.push({ cell, color: powerUp.color, object: orb })
+
+      this.tweens.add({
+        targets: orb,
+        scale: { from: 0.9, to: 1.2 },
+        y: position.y - 2,
+        duration: 650,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      })
+
+      this.physics.add.overlap(this.player, orb, () => {
+        this.collectPowerUp(powerUp.id, orb)
+      })
+    })
+  }
+
+  private collectPowerUp(
+    id: PowerUpId,
+    orb: Phaser.Physics.Arcade.Image,
+  ): void {
+    if (!orb.active) {
+      return
+    }
+
+    const powerUp = POWER_UPS[id]
+
+    this.tweens.killTweensOf(orb)
+    sfx.unlock()
+    this.hopForJoy()
+    this.burstFirefly(orb.x, orb.y)
+    orb.destroy()
+
+    if (id === 'shield') {
+      this.activateShield()
+    } else if (id === 'speed') {
+      this.speedUntil = this.elapsedMs + (powerUp.durationMs ?? 6000)
+    } else {
+      for (const cell of this.maze.flat()) {
+        this.visitedCells.add(`${cell.row},${cell.column}`)
+      }
+    }
+
+    this.drawMinimap(this.getPlayerCell())
+    this.showNotification(
+      `${powerUp.name.toUpperCase()}! ${powerUp.description}`,
+      '#' + powerUp.color.toString(16).padStart(6, '0'),
+      1800,
+    )
+  }
+
+  private activateShield(): void {
+    this.shieldActive = true
+    this.shieldRing?.destroy()
+    this.shieldRing = this.add
+      .circle(this.player.x, this.player.y, 20, 0x6bc5ff, 0.12)
+      .setStrokeStyle(2, 0x9fe0ff, 0.9)
+      .setDepth(11)
+    this.minimapCamera.ignore(this.shieldRing)
+    this.tweens.add({
+      targets: this.shieldRing,
+      scale: { from: 0.92, to: 1.08 },
+      duration: 500,
+      yoyo: true,
+      repeat: -1,
+    })
+  }
+
+  /** O escudo absorve a captura: some, o Estouro fica atordoado e o Pipoca, protegido. */
+  private useShield(): void {
+    this.shieldActive = false
+    this.graceUntil = this.elapsedMs + SHIELD_GRACE_MS
+    this.hunter?.stun(SHIELD_STUN_MS)
+    sfx.alert()
+    this.cameras.main.flash(250, 140, 200, 255)
+    this.cameras.main.shake(200, 0.008)
+
+    if (this.shieldRing) {
+      const ring = this.shieldRing
+
+      this.tweens.killTweensOf(ring)
+      this.tweens.add({
+        targets: ring,
+        scale: 4,
+        alpha: 0,
+        duration: 400,
+        onComplete: () => ring.destroy(),
+      })
+      this.shieldRing = undefined
+    }
+
+    this.showNotification('O ESCUDO SE QUEBROU! CORRA!', '#6bc5ff', 2000)
   }
 
   private collectBone(bone: Phaser.Physics.Arcade.Image): void {
@@ -1450,6 +1605,16 @@ export class GameScene extends Phaser.Scene {
 
   private catchPlayer(): void {
     if (this.gamePhase === 'defeat' || this.gamePhase === 'victory') {
+      return
+    }
+
+    if (this.elapsedMs < this.graceUntil) {
+      return
+    }
+
+    if (this.shieldActive) {
+      this.useShield()
+
       return
     }
 
@@ -1833,6 +1998,11 @@ export class GameScene extends Phaser.Scene {
 
     hud.setTime(this.elapsedMs)
     hud.setNight(this.night, this.mode === 'daily')
+    this.shieldRing?.setPosition(this.player.x, this.player.y)
+    hud.setPowerUps(
+      this.shieldActive,
+      Math.max(0, this.speedUntil - this.elapsedMs),
+    )
     hud.setModifiers(this.modifiers.map((modifier) => modifier.name))
     hud.setHidden(this.hidden)
     hud.setStamina(this.stamina.value, this.stamina.exhausted)

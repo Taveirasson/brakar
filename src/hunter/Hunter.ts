@@ -47,6 +47,8 @@ export class Hunter {
   private currentCell: CellPosition
   /** 1 = normal; menor que 1 na lama. */
   speedMultiplier = 1
+  /** Atordoado (escudo do Pipoca): não se move nem percebe. */
+  private stunnedMs = 0
   private targetCell: CellPosition
 
   constructor(
@@ -99,12 +101,24 @@ export class Hunter {
     return this.sprite
   }
 
+  /** Paralisa o Estouro por um tempo; ele pisca enquanto está atordoado. */
+  stun(ms: number): void {
+    this.stunnedMs = ms
+  }
+
   update(
     deltaMs: number,
     playerCell: CellPosition,
     playerPosition: Point,
     perceivesPlayer: boolean,
   ): void {
+    if (this.stunnedMs > 0) {
+      this.stunnedMs -= deltaMs
+      this.sprite.setAlpha(this.stunnedMs > 0 ? 0.45 : 1)
+
+      return
+    }
+
     this.brain.update({
       deltaMs,
       hunterCell: this.currentCell,

@@ -26,6 +26,7 @@ export class HudScene extends Phaser.Scene {
   private staminaExhausted = false
   private hiddenLabel!: Phaser.GameObjects.Text
   private modifierLabel!: Phaser.GameObjects.Text
+  private powerUpLabel!: Phaser.GameObjects.Text
   private danger = 0
   private nextBeatAt = 0
   private touchEnabled = false
@@ -87,6 +88,12 @@ export class HudScene extends Phaser.Scene {
       strokeThickness: 3,
       color: '#ffd36a',
     })
+    this.powerUpLabel = this.add.text(16, 146, '', {
+      ...style,
+      fontSize: '16px',
+      strokeThickness: 3,
+      color: '#9fe0ff',
+    })
     this.hiddenLabel = this.add
       .text(this.scale.width / 2, this.scale.height - 40, 'ESCONDIDO', {
         ...style,
@@ -137,6 +144,17 @@ export class HudScene extends Phaser.Scene {
     bar.fillRoundedRect(16, 106, width + 4, 10, 4)
     bar.fillStyle(color, 1)
     bar.fillRoundedRect(18, 108, Math.max(0, width * this.staminaValue), 6, 3)
+  }
+
+  setPowerUps(shield: boolean, speedLeftMs: number): void {
+    const parts: string[] = []
+
+    if (shield) parts.push('ESCUDO')
+    if (speedLeftMs > 0) {
+      parts.push(`PATA VELOZ ${Math.ceil(speedLeftMs / 1000)}s`)
+    }
+
+    this.powerUpLabel?.setText(parts.join('   '))
   }
 
   setModifiers(names: string[]): void {

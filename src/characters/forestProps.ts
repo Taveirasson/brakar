@@ -118,3 +118,64 @@ export function createGlowTexture(scene: Phaser.Scene): void {
   // filtro linear: com pixelArt o gradiente ampliado formaria anéis
   texture.setFilter(Phaser.Textures.FilterMode.LINEAR)
 }
+
+export function powerUpTextureKey(id: string): string {
+  return `powerup-${id}`
+}
+
+/** Orbes brilhantes dos power-ups, com o símbolo de cada um desenhado em branco. */
+export function createPowerUpTextures(
+  scene: Phaser.Scene,
+  powerUps: Array<{ id: string; color: number }>,
+): void {
+  const symbols: Record<string, Array<[number, number]>> = {
+    shield: [
+      [12, 5],
+      [18, 7],
+      [18, 13],
+      [12, 19],
+      [6, 13],
+      [6, 7],
+    ],
+    speed: [
+      [13, 4],
+      [8, 13],
+      [12, 13],
+      [10, 20],
+      [17, 10],
+      [13, 10],
+    ],
+    map: [
+      [12, 4],
+      [16, 12],
+      [12, 20],
+      [8, 12],
+    ],
+  }
+
+  for (const powerUp of powerUps) {
+    const key = powerUpTextureKey(powerUp.id)
+
+    if (scene.textures.exists(key)) {
+      continue
+    }
+
+    const graphics = scene.make.graphics({ x: 0, y: 0 })
+
+    graphics.fillStyle(powerUp.color, 0.22)
+    graphics.fillCircle(12, 12, 12)
+    graphics.fillStyle(powerUp.color, 0.55)
+    graphics.fillCircle(12, 12, 9)
+    graphics.fillStyle(0x0b1410, 0.85)
+    graphics.fillCircle(12, 12, 7.5)
+    graphics.fillStyle(0xffffff, 1)
+    graphics.fillPoints(
+      (symbols[powerUp.id] ?? symbols.map).map(
+        ([x, y]) => new Phaser.Math.Vector2(x, y),
+      ),
+      true,
+    )
+    graphics.generateTexture(key, 24, 24)
+    graphics.destroy()
+  }
+}
