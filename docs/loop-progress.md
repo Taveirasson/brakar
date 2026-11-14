@@ -89,8 +89,8 @@ Problemas achados na auditoria (screenshots em PC e celular deitado):
 - Celular: textos pequenos demais (escala 0,72), botões baixos para o toque, abertura sem dica de toque.
 
 Ordem planejada (marque ao concluir; cada item conferido por captura e commitado):
-1. [ ] Notificações: caixa se ajusta ao texto (quebra de linha, largura máx.), posição que não cobre o HUD; tutorial vai para a parte de baixo.
-2. [ ] Esconder o HUD e as notificações enquanto pausa/vitória/derrota/bênção estão abertas; restaurar ao voltar.
+1. [x] (feito, conferido por captura) Notificações: caixa se ajusta ao texto (quebra de linha, largura máx.), posição que não cobre o HUD; tutorial vai para a parte de baixo.
+2. [x] (feito: ui/overlayHud.ts; conferido por captura) Esconder o HUD e as notificações enquanto pausa/vitória/derrota/bênção estão abertas; restaurar ao voltar.
 3. [ ] Menu: linha inferior alinhada à coluna, recordes compactos (4 linhas), "Ver histórico" como botão pequeno, missões com fundo translúcido sem cobrir a bomba.
 4. [ ] Histórico: colunas centradas em 960, espaçamento e alinhamento das listas.
 5. [ ] Vitória/derrota: ritmo vertical (estatísticas, conquistas com quebra de linha, botões), painel com folga.

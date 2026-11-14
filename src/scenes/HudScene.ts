@@ -39,6 +39,7 @@ export class HudScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.scene.setVisible(true)
     this.danger = 0
     this.nextBeatAt = 0
     resetTouchInput()
@@ -116,7 +117,7 @@ export class HudScene extends Phaser.Scene {
       repeat: -1,
     })
     this.tutorialLabel = this.add
-      .text(this.scale.width / 2, 70, '', {
+      .text(this.scale.width / 2, this.scale.height - 92, '', {
         ...style,
         color: '#ffd36a',
         align: 'center',

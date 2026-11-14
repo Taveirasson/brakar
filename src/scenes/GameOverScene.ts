@@ -3,6 +3,7 @@ import { buildShareText, copyText } from '../run/share'
 import { dateKey } from '../run/daily'
 import { getGameMode, resetNight } from '../run/runState'
 import { SCENE_KEYS } from '../config/sceneKeys'
+import { setGameHudVisible } from '../ui/overlayHud'
 import { createTextButton } from '../ui/createTextButton'
 import { formatTime, type Records } from '../run/records'
 import { addBackdrop, addPanel, addText, THEME } from '../ui/theme'
@@ -50,6 +51,7 @@ export class GameOverScene extends Phaser.Scene {
     const centerX = this.scale.width / 2
     const centerY = this.scale.height / 2
 
+    setGameHudVisible(this, false)
     addBackdrop(this, 0.88)
     addPanel(this, centerX, centerY, 580, 400, 0xc0504f)
 

@@ -4,6 +4,7 @@ import { epilogueForNight } from '../run/story'
 import { dateKey } from '../run/daily'
 import { nextNight, type GameMode } from '../run/runState'
 import { SCENE_KEYS } from '../config/sceneKeys'
+import { setGameHudVisible } from '../ui/overlayHud'
 import { createTextButton } from '../ui/createTextButton'
 import { formatTime, type Records } from '../run/records'
 import { addBackdrop, addPanel, addText, THEME } from '../ui/theme'
@@ -55,6 +56,7 @@ export class VictoryScene extends Phaser.Scene {
     const centerX = this.scale.width / 2
     const centerY = this.scale.height / 2
 
+    setGameHudVisible(this, false)
     addBackdrop(this, 0.88)
     // confete entre o fundo escuro e o painel
     this.launchConfetti()

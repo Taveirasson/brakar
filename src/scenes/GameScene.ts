@@ -49,6 +49,7 @@ import {
 } from '../player/stamina'
 import { hidingSpotOffset, pickHidingCells } from '../maze/HidingSpotPlacement'
 import { FONT_FAMILY } from '../ui/theme'
+import { setGameHudVisible } from '../ui/overlayHud'
 import { touchInput } from '../input/touchInput'
 import { sfx, toggleMuted } from '../audio/sfx'
 import { addBones, bonesForRun, loadWallet } from '../run/wallet'
@@ -394,6 +395,7 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.fadeIn(250, 5, 10, 7)
     this.startHud()
     this.startNotificationScene()
+    setGameHudVisible(this, true)
     if (consumeOpening()) {
       this.openingPlayed = true
       this.playOpening()

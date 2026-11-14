@@ -2,6 +2,7 @@ import Phaser from 'phaser'
 import { isMuted, toggleMuted } from '../audio/sfx'
 import { resetNight } from '../run/runState'
 import { SCENE_KEYS } from '../config/sceneKeys'
+import { setGameHudVisible } from '../ui/overlayHud'
 import { createTextButton } from '../ui/createTextButton'
 import { addBackdrop, addPanel, addText } from '../ui/theme'
 
@@ -14,6 +15,7 @@ export class PauseScene extends Phaser.Scene {
     const centerX = this.scale.width / 2
     const centerY = this.scale.height / 2
 
+    setGameHudVisible(this, false)
     addBackdrop(this, 0.78)
     addPanel(this, centerX, centerY + 20, 440, 410)
     addText(this, centerX, centerY - 125, 'PAUSADO', 'heading')
@@ -74,6 +76,7 @@ export class PauseScene extends Phaser.Scene {
   }
 
   private resumeGame(): void {
+    setGameHudVisible(this, true)
     this.scene.resume(SCENE_KEYS.game)
     this.scene.stop()
   }
