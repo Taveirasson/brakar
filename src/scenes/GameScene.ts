@@ -64,6 +64,7 @@ import { unlockAchievements } from '../run/achievements'
 import { recordMissions } from '../run/missions'
 import { recordHistory } from '../run/history'
 import { OWL_COOLDOWN_MS, owlActive, owlShouldHoot } from '../run/owl'
+import { hunterGraceMs } from '../hunter/hunterSettings'
 import {
   Tutorial,
   isTutorialDone,
@@ -1234,7 +1235,7 @@ export class GameScene extends Phaser.Scene {
     const bushCells = this.spawnHidingSpots(itemCells)
     const boneCells = this.spawnBones([...itemCells, ...bushCells])
     this.spawnPowerUps([...itemCells, ...bushCells, ...boneCells])
-    this.spawnHunter()
+    this.scheduleHunter()
     this.spawnOwl()
     this.announceModifiers()
     this.startTutorial()
@@ -1752,6 +1753,24 @@ export class GameScene extends Phaser.Scene {
       alpha: 0,
       duration: 500,
       onComplete: () => this.time.delayedCall(2500, () => this.perchOwl()),
+    })
+  }
+
+  /** Período de graça: o Estouro só acorda depois de alguns segundos (mais na noite 1). */
+  private scheduleHunter(): void {
+    const graceMs = hunterGraceMs(this.night)
+
+    this.time.delayedCall(graceMs, () => {
+      if (
+        this.gamePhase !== 'searchingItems' &&
+        this.gamePhase !== 'returningToExit'
+      ) {
+        return
+      }
+
+      this.spawnHunter()
+      sfx.alert()
+      this.showNotification('O ESTOURO ACORDOU! FIQUE ATENTO', '#ff9b9b', 2200)
     })
   }
 

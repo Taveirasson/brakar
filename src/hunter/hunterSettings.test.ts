@@ -2,8 +2,16 @@ import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_HUNTER_SETTINGS,
   MAX_HUNT_SPEED,
+  hunterGraceMs,
   hunterSettingsForNight,
 } from './hunterSettings'
+
+describe('hunterGraceMs', () => {
+  it('dá mais tempo na noite 1', () => {
+    expect(hunterGraceMs(1)).toBeGreaterThan(hunterGraceMs(2))
+    expect(hunterGraceMs(5)).toBe(hunterGraceMs(2))
+  })
+})
 
 describe('hunterSettingsForNight', () => {
   it('noite 1 usa os valores base', () => {

@@ -22,6 +22,11 @@ export const HUNTER_SIZE = 18
 export const NIGHT_SPEED_GAIN = 0.05
 export const MAX_HUNT_SPEED = 106 * MOVEMENT_SCALE
 
+/** Segundos de paz antes do Estouro acordar: mais generoso na noite 1, que ensina o jogo. */
+export function hunterGraceMs(night: number): number {
+  return night <= 1 ? 12_000 : 8_000
+}
+
 export function hunterSettingsForNight(
   night: number,
   base: HunterSettings = DEFAULT_HUNTER_SETTINGS,
