@@ -51,7 +51,7 @@ Ordem planejada (marque ao concluir):
 9. [x] Histórico (src/run/history.ts, HistoryScene): top 5 fugas do modo normal (tempo, noite, data), últimos 8 dias do desafio e recorde de sobrevivência; abre ao clicar em "▸ Ver histórico" no canto do menu. Testado no navegador.
 
 
-## FASE 3 — Abertura (primeiro minuto) — planejamento, nada implementado ainda
+## FASE 3 — Abertura (primeiro minuto) — CONCLUÍDA (itens 1-9)
 
 Problema: a partida começa com a fase "litExploration": o jogador atravessa o labirinto inteiro, sem Estouro, sem vagalumes e sem recompensa, até o farol da célula mais distante (`findFarthestCell`), só para abrir o painel "O CARRO JÁ SE FOI" (LockedExitScene). Depois o jogo de verdade começa e a saída é reaproveitada no fim. Resultado: 30-90 s de caminhada sem decisão antes da 1ª ação.
 
@@ -73,6 +73,6 @@ Ordem planejada (marque ao concluir; cada item testado no navegador e commitado)
 6. [x] (feito: consumeOpening/resetOpening em runState; a cena do carro só toca na 1ª noite vinda do menu; retentativa e noites seguintes entram direto no escuro, fade 250 ms e aviso "NOITE N"; testado) Reinício instantâneo: tentar de novo pula qualquer cena/painel e entra direto no escuro (sem abertura do carro); mostrar "Noite N" em ~1 s. Botão de pausa/retomar sem custo no celular.
 7. [x] (feito: src/run/boons.ts + BoonScene; 7 bênçãos, 1 de 3 antes de cada noite 2+ no normal/sobrevivência, valem até o fim da corrida, não no desafio do dia; testado) Escolha de bênção a cada noite (roguelike): antes da noite 2+, escolher 1 de 3 efeitos pequenos (ex.: +fôlego, Estouro lento nos primeiros 20 s, vagalumes brilham mais, 1 escudo inicial). Dá motivo para "mais uma noite".
 8. [x] (feito: ordem andar -> vagalume (seta) -> correr -> moita; termina sozinho ao pegar os 3 vagalumes; dicas antigas só 1 partida e sem o aviso do Estouro; testado) Ajustar o tutorial à nova abertura (movimento + objetivo primeiro; correr/moita só depois do 1º vagalume) e encurtar dicas.
-9. [ ] Medir o gancho localmente (sem rede): tempo até o 1º vagalume e fugas na 1ª partida, mostrados no HISTÓRICO, para comparar antes/depois.
+9. [x] (feito: src/run/hook.ts; tempo até o 1º vagalume e resultado da 1ª partida, na tela HISTÓRICO; testado) Medir o gancho localmente (sem rede): tempo até o 1º vagalume e fugas na 1ª partida, mostrados no HISTÓRICO, para comparar antes/depois.
 
 Fontes da pesquisa: wayline.io (tutorial UX, retenção em roguelikes), game-wisdom.com (onboarding, 'frictionless hook'), finalboss.io (hook rate), gdevelop.io/blog/casual-game-loops, gameanalytics.com (appointment mechanics), gamedesignbites (retenção em baixa atenção). Todas são blogs de praticantes; números específicos citados lá não foram verificados.

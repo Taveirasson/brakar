@@ -4,6 +4,7 @@ import { loadDaily } from '../run/daily'
 import { dailyHistory, loadHistory, shortDate } from '../run/history'
 import { formatTime } from '../run/records'
 import { loadSurvivalBest } from '../run/survival'
+import { averageFirstFirefly, loadHook } from '../run/hook'
 import { createTextButton } from '../ui/createTextButton'
 import { addBackdrop, addPanel, addText, THEME } from '../ui/theme'
 
@@ -49,11 +50,30 @@ export class HistoryScene extends Phaser.Scene {
     addText(
       this,
       centerX,
-      410,
+      350,
       survival.score > 0
         ? `Sobrevivência: ${survival.score} pontos  ·  ${survival.nights} ${survival.nights === 1 ? 'noite' : 'noites'}`
         : 'Sobrevivência: ainda sem corrida',
       'body',
+    )
+
+    const hook = loadHook()
+    const average = averageFirstFirefly(hook)
+    const first = hook.firstRun
+
+    addText(
+      this,
+      centerX,
+      395,
+      [
+        average === null
+          ? 'Gancho: ainda sem dados'
+          : `1º vagalume em ${(average / 1000).toFixed(1)} s (média das últimas ${hook.firstFireflyMs.length} partidas)`,
+        first
+          ? `1ª partida: vagalume em ${first.firstFireflyMs === null ? '—' : (first.firstFireflyMs / 1000).toFixed(1) + ' s'} · ${first.escaped === null ? 'sem fim' : first.escaped ? 'escapou' : 'foi pego'}`
+          : '',
+      ].filter(Boolean),
+      'muted',
     )
 
     createTextButton({

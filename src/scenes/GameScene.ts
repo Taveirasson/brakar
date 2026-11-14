@@ -65,6 +65,7 @@ import {
 import { unlockAchievements } from '../run/achievements'
 import { recordMissions } from '../run/missions'
 import { comboBonus } from '../run/combo'
+import { noteFirstFirefly, noteFirstRunEnd, noteRunStart } from '../run/hook'
 import { applyBoons, type BoonSummary } from '../run/boons'
 import { recordHistory } from '../run/history'
 import { OWL_COOLDOWN_MS, owlActive, owlShouldHoot } from '../run/owl'
@@ -249,6 +250,8 @@ export class GameScene extends Phaser.Scene {
   private owlCooldownMs = 0
   private openingTimer?: Phaser.Time.TimerEvent
   private veteran = false
+  private firstRunEver = false
+  private firstFireflyNoted = false
   private boons!: BoonSummary
   private openingPlayed = true
   private lastFireflyAt: number | null = null
@@ -334,6 +337,8 @@ export class GameScene extends Phaser.Scene {
     this.owlCooldownMs = 0
     this.openingTimer = undefined
     this.lastFireflyAt = null
+    this.firstFireflyNoted = false
+    this.firstRunEver = noteRunStart()
     this.comboBones = 0
     this.veteran = loadRecords().escapes >= COMPASS_VETERAN_ESCAPES
     this.lastHunterState = ''
@@ -1141,6 +1146,8 @@ export class GameScene extends Phaser.Scene {
       recordHistory(timeMs, this.night)
     }
 
+    if (this.firstRunEver) noteFirstRunEnd(true)
+
     const missions = this.missionReward(true, timeMs)
     const achievements = this.earnAchievements(true, timeMs)
     const bones = this.bankBones(true, missions.reward)
@@ -1943,6 +1950,8 @@ export class GameScene extends Phaser.Scene {
     const survival = this.mode === 'survival' ? this.survivalOver() : undefined
     const records =
       this.mode === 'normal' ? recordCaught(this.night) : loadRecords()
+    if (this.firstRunEver) noteFirstRunEnd(false)
+
     const missions = this.missionReward(false, timeMs)
     const achievements = this.earnAchievements(false, timeMs)
     const bones = this.bankBones(false, missions.reward)
@@ -2286,6 +2295,11 @@ export class GameScene extends Phaser.Scene {
     this.drawMinimap(this.getPlayerCell())
     this.collectedItems++
     this.tutorialEvent('firefly')
+
+    if (!this.firstFireflyNoted) {
+      this.firstFireflyNoted = true
+      noteFirstFirefly(this.elapsedMs, this.firstRunEver)
+    }
     this.floatPopup(item.x, item.y, '+1', '#d9ff6b')
 
     const combo = comboBonus(this.lastFireflyAt, this.elapsedMs)
