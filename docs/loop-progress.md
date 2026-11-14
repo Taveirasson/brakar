@@ -44,7 +44,7 @@ Ordem planejada (marque ao concluir):
 2. [x] Meta-progressão: ossos coletados + bônus de fuga (3 + noite-1) viram moeda salva (src/run/wallet.ts); ShopScene com 4 pelagens (tint) e 3 rastros de patas (folhas, brasas, estrelas) com preview; botão LOJA no menu (menu agora: INICIAR, DESAFIO, LOJA, HISTÓRIA/AJUSTES). Testado (compra, equipar, tint e rastro no jogo, banco de ossos).
 3. [x] Modificadores de noite (src/run/modifiers.ts): Névoa densa, Lua nova, Estouro veloz, Faro aguçado, Brejo, Sem ossos, Lua cheia. Noite 1 sem; noites 2-3 um; 4+ dois; o Desafio do dia sempre tem um (sorteado pela semente). Aviso ao apagar as luzes, rótulo ⚠ no HUD e bônus de ossos ao escapar. Testado no navegador. (Estouro duplo ficou para o item 8: exige vários caçadores.)
 4. [x] Power-ups (src/run/powerups.ts): orbes no chão (3 por noite no 10x10, um de cada tipo): Escudo (absorve uma captura, atordoa o Estouro 2,5 s e protege 3 s), Pata veloz (+30% por 6 s) e Mapa da mata (revela o minimapa). Anel do escudo, rótulos no HUD, pontos coloridos no minimapa. Testado no navegador (coleta dos 3 tipos, escudo absorvendo a captura).
-5. [ ] Missões diárias/semanais (ex.: 'esconda-se 3 vezes') com recompensa de moeda.
+5. [x] Missões do dia (src/run/missions.ts): 3 sorteadas pela data (esconder, ossos, vagalumes, fugas, power-ups, fuga sem ser caçado, noite 3), progresso somado entre tentativas e recompensa em ossos paga uma vez; painel no canto do menu e aviso nas telas de fim. Testado no navegador (menu). Semanais ficaram de fora.
 6. [ ] Modo infinito/sobrevivência (arcade) com pontuação.
 7. [ ] Tutorial interativo curto na primeira partida.
 8. [ ] Novo tipo de inimigo ou evento (ex.: coruja que denuncia, Estouro filhote).

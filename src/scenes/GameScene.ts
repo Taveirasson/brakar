@@ -50,6 +50,7 @@ import { addBones, bonesForRun, loadWallet } from '../run/wallet'
 import { skinTint } from '../run/shopItems'
 import { getGameMode, getNight, type GameMode } from '../run/runState'
 import { unlockAchievements } from '../run/achievements'
+import { recordMissions } from '../run/missions'
 import { loadRecords, recordCaught, recordEscape } from '../run/records'
 import { NIGHT_LIGHTING } from '../vision/moonlight'
 import {
@@ -206,6 +207,7 @@ export class GameScene extends Phaser.Scene {
   private hides = 0
   private bonesCollected = 0
   private timesHunted = 0
+  private powerUpsCollected = 0
   private lastHunterState = ''
   private alertMarker?: Phaser.GameObjects.Text
   private stamina: StaminaState = FULL_STAMINA
@@ -276,6 +278,7 @@ export class GameScene extends Phaser.Scene {
     this.hides = 0
     this.bonesCollected = 0
     this.timesHunted = 0
+    this.powerUpsCollected = 0
     this.lastHunterState = ''
     this.alertMarker = undefined
     this.night = this.mode === 'daily' ? 1 : getNight()
@@ -1013,8 +1016,9 @@ export class GameScene extends Phaser.Scene {
     const timeMs = Math.round(this.elapsedMs)
     const daily = this.mode === 'daily' ? recordDailyEscape(timeMs) : undefined
     const result = daily ? undefined : recordEscape(timeMs, this.night)
+    const missions = this.missionReward(true, timeMs)
     const achievements = this.earnAchievements(true, timeMs)
-    const bones = this.bankBones(true)
+    const bones = this.bankBones(true, missions.reward)
 
     this.physics.pause()
     this.cameras.main.flash(250, 244, 211, 94)
@@ -1026,7 +1030,7 @@ export class GameScene extends Phaser.Scene {
         timeMs,
         night: this.night,
         ...result,
-        achievements,
+        achievements: [...achievements, ...missions.titles],
         bones,
         mode: this.mode,
         daily: daily && {
@@ -1385,6 +1389,7 @@ export class GameScene extends Phaser.Scene {
 
     const powerUp = POWER_UPS[id]
 
+    this.powerUpsCollected++
     this.tweens.killTweensOf(orb)
     sfx.unlock()
     this.hopForJoy()
@@ -1624,8 +1629,9 @@ export class GameScene extends Phaser.Scene {
     const timeMs = Math.round(this.elapsedMs)
     const records =
       this.mode === 'daily' ? loadRecords() : recordCaught(this.night)
+    const missions = this.missionReward(false, timeMs)
     const achievements = this.earnAchievements(false, timeMs)
-    const bones = this.bankBones(false)
+    const bones = this.bankBones(false, missions.reward)
     this.effects?.stop()
     this.player.setVelocity(0, 0)
 
@@ -1641,7 +1647,7 @@ export class GameScene extends Phaser.Scene {
         night: this.night,
         timeMs,
         records,
-        achievements,
+        achievements: [...achievements, ...missions.titles],
         bones,
         mode: this.mode,
       })
@@ -1740,11 +1746,37 @@ export class GameScene extends Phaser.Scene {
     })
   }
 
-  /** Guarda na carteira os ossos desta tentativa (coletados + bônus de fuga). */
-  private bankBones(escaped: boolean): { earned: number; total: number } {
+  /** Soma a tentativa às missões do dia e devolve os títulos das concluídas (com recompensa). */
+  private missionReward(
+    escaped: boolean,
+    timeMs: number,
+  ): { titles: string[]; reward: number } {
+    const update = recordMissions({
+      escaped,
+      night: this.night,
+      timeMs,
+      hides: this.hides,
+      bones: this.bonesCollected,
+      timesHunted: this.timesHunted,
+      fireflies: this.collectedItems,
+      powerUps: this.powerUpsCollected,
+    })
+
+    return {
+      titles: update.completed.map((m) => `Missão: ${m.title} (+${m.reward})`),
+      reward: update.reward,
+    }
+  }
+
+  /** Guarda na carteira os ossos desta tentativa (coletados + bônus de fuga + missões). */
+  private bankBones(
+    escaped: boolean,
+    missionBones = 0,
+  ): { earned: number; total: number } {
     const earned =
       bonesForRun(this.bonesCollected, escaped, this.night) +
-      (escaped ? this.effects_.bonusBones : 0)
+      (escaped ? this.effects_.bonusBones : 0) +
+      missionBones
     const wallet = addBones(earned)
 
     return { earned, total: wallet.bones }

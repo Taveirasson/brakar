@@ -5,6 +5,7 @@ import { hasSeenIntro } from './IntroScene'
 import { ACHIEVEMENTS, loadEarned } from '../run/achievements'
 import { activeStreak, dateKey, loadDaily } from '../run/daily'
 import { formatTime, loadRecords } from '../run/records'
+import { loadMissions, missionStatuses } from '../run/missions'
 import { loadWallet } from '../run/wallet'
 import { resetNight, setGameMode } from '../run/runState'
 import { FONT_FAMILY, addText } from '../ui/theme'
@@ -42,6 +43,7 @@ export class MenuScene extends Phaser.Scene {
     const buttonsX = 660
 
     this.showRecords()
+    this.showMissions()
 
     const title = addText(this, titleX, 62, 'BRAKAR', 'title')
 
@@ -213,6 +215,32 @@ export class MenuScene extends Phaser.Scene {
     ].filter(Boolean)
 
     this.addInfoText(lines)
+  }
+
+  /** Missões do dia no canto superior direito. */
+  private showMissions(): void {
+    const statuses = missionStatuses(loadMissions())
+    const lines = [
+      'MISSÕES DO DIA',
+      ...statuses.map(({ mission, progress, done }) =>
+        done
+          ? `✔ ${mission.title}`
+          : `· ${mission.title} ${progress}/${mission.target}  (+${mission.reward})`,
+      ),
+    ]
+
+    this.add
+      .text(this.scale.width - 18, 14, lines, {
+        fontFamily: FONT_FAMILY,
+        fontSize: '14px',
+        color: '#f2ead3',
+        align: 'right',
+        lineSpacing: 6,
+        stroke: '#050a07',
+        strokeThickness: 4,
+      })
+      .setOrigin(1, 0)
+      .setDepth(5)
   }
 
   private addInfoText(lines: string[]): void {
