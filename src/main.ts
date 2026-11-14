@@ -1,10 +1,16 @@
 import Phaser from 'phaser'
 import './style.css'
+import './ui/theme.css'
 import { GameScene } from './scenes/GameScene'
 import { MenuScene } from './scenes/MenuScene'
 import { PauseScene } from './scenes/PauseScene'
 import { VictoryScene } from './scenes/VictoryScene'
-import { LockedExitScene } from './scenes/LockedExitScene'
+import { GameOverScene } from './scenes/GameOverScene'
+import { ShopScene } from './scenes/ShopScene'
+import { HistoryScene } from './scenes/HistoryScene'
+import { BoonScene } from './scenes/BoonScene'
+import { IntroScene } from './scenes/IntroScene'
+import { HudScene } from './scenes/HudScene'
 import { NotificationScene } from './scenes/NotificationScene'
 import { ConfigurationScene } from './scenes/ConfigurationScene'
 
@@ -39,9 +45,14 @@ const config: Phaser.Types.Core.GameConfig = {
     MenuScene,
     GameScene,
     PauseScene,
-    LockedExitScene,
+    IntroScene,
+    ShopScene,
+    HistoryScene,
+    BoonScene,
+    HudScene,
     NotificationScene,
     VictoryScene,
+    GameOverScene,
     ConfigurationScene,
   ],
 
@@ -50,4 +61,18 @@ const config: Phaser.Types.Core.GameConfig = {
   },
 }
 
-new Phaser.Game(config)
+// O Phaser desenha o texto uma vez: espera a fonte do tema carregar (no máximo
+// 1,5 s, para não travar sem internet) antes de criar o jogo.
+const fontReady = document.fonts
+  .load('20px "Pixelify Sans"')
+  .catch(() => undefined)
+const fontTimeout = new Promise((resolve) => setTimeout(resolve, 1500))
+
+Promise.race([fontReady, fontTimeout]).then(() => {
+  const game = new Phaser.Game(config)
+
+  if (import.meta.env.DEV) {
+    // só em desenvolvimento: permite inspecionar o jogo pelo console/testes
+    ;(window as unknown as { __game: Phaser.Game }).__game = game
+  }
+})

@@ -1,6 +1,11 @@
 import Phaser from 'phaser'
+import { isMuted, toggleMuted } from '../audio/sfx'
+import { resetNight } from '../run/runState'
 import { SCENE_KEYS } from '../config/sceneKeys'
+import { enableKeyboardMenu } from '../ui/menuNavigation'
+import { setGameHudVisible } from '../ui/overlayHud'
 import { createTextButton } from '../ui/createTextButton'
+import { addBackdrop, addPanel, addText } from '../ui/theme'
 
 export class PauseScene extends Phaser.Scene {
   constructor() {
@@ -11,27 +16,15 @@ export class PauseScene extends Phaser.Scene {
     const centerX = this.scale.width / 2
     const centerY = this.scale.height / 2
 
-    this.add.rectangle(
-      centerX,
-      centerY,
-      this.scale.width,
-      this.scale.height,
-      0x09070f,
-      0.8,
-    )
-
-    this.add
-      .text(centerX, centerY - 80, 'JOGO PAUSADO', {
-        fontFamily: 'monospace',
-        fontSize: '42px',
-        color: '#ffffff',
-      })
-      .setOrigin(0.5)
+    setGameHudVisible(this, false)
+    addBackdrop(this, 0.78)
+    addPanel(this, centerX, centerY + 20, 440, 410)
+    addText(this, centerX, centerY - 125, 'PAUSADO', 'heading')
 
     createTextButton({
       scene: this,
       x: centerX,
-      y: centerY,
+      y: centerY - 55,
       label: 'CONTINUAR',
       onClick: () => {
         this.resumeGame()
@@ -41,10 +34,22 @@ export class PauseScene extends Phaser.Scene {
     createTextButton({
       scene: this,
       x: centerX,
-      y: centerY + 70,
+      y: centerY + 10,
       label: 'REINICIAR',
       onClick: () => {
         this.restartGame()
+      },
+    })
+
+    const soundLabel = () => (isMuted() ? 'SOM: DESLIGADO' : 'SOM: LIGADO')
+    const soundButton = createTextButton({
+      scene: this,
+      x: centerX,
+      y: centerY + 75,
+      label: soundLabel(),
+      onClick: () => {
+        toggleMuted()
+        ;(soundButton.list[1] as Phaser.GameObjects.Text).setText(soundLabel())
       },
     })
 
@@ -59,6 +64,7 @@ export class PauseScene extends Phaser.Scene {
     })
 
     this.configureKeyboard()
+    enableKeyboardMenu(this)
   }
 
   private configureKeyboard(): void {
@@ -72,6 +78,7 @@ export class PauseScene extends Phaser.Scene {
   }
 
   private resumeGame(): void {
+    setGameHudVisible(this, true)
     this.scene.resume(SCENE_KEYS.game)
     this.scene.stop()
   }
@@ -82,6 +89,7 @@ export class PauseScene extends Phaser.Scene {
   }
 
   private restartGame(): void {
+    resetNight()
     this.scene.stop(SCENE_KEYS.game)
     this.scene.start(SCENE_KEYS.game)
   }

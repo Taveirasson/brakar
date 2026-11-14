@@ -1,0 +1,217 @@
+import Phaser from 'phaser'
+import type { MazeCell } from '../maze/MazeGenerator'
+import type { CellPosition } from '../maze/MazePathFinder'
+import type { Point } from '../vision/lineOfSight'
+import { cellCenter } from '../maze/MazeLayout'
+import { HunterBrain, type HunterState } from './HunterBrain'
+import { HUNTER_SIZE, type HunterSettings } from './hunterSettings'
+import {
+  ESTOURO_ANIMATIONS,
+  ESTOURO_TEXTURE,
+  estouroAnimationFor,
+} from '../characters/characterAnimationRules'
+import { ensureAnimations } from '../characters/characterAnimations'
+
+const HUNTER_TEXTURE = 'hunter'
+const HUNTER_BODY_COLOR = 0x1a0f1f
+const HUNTER_EYE_COLOR = 0xf2f2f2
+const HUNTER_EYE_SIZE = 3
+
+function createHunterTexture(scene: Phaser.Scene): void {
+  if (scene.textures.exists(HUNTER_TEXTURE)) {
+    return
+  }
+
+  const graphics = scene.make.graphics({ x: 0, y: 0 })
+
+  graphics.fillStyle(HUNTER_BODY_COLOR, 1)
+  graphics.fillRect(0, 0, HUNTER_SIZE, HUNTER_SIZE)
+
+  graphics.fillStyle(HUNTER_EYE_COLOR, 1)
+  graphics.fillRect(4, 5, HUNTER_EYE_SIZE, HUNTER_EYE_SIZE)
+  graphics.fillRect(
+    HUNTER_SIZE - 4 - HUNTER_EYE_SIZE,
+    5,
+    HUNTER_EYE_SIZE,
+    HUNTER_EYE_SIZE,
+  )
+
+  graphics.generateTexture(HUNTER_TEXTURE, HUNTER_SIZE, HUNTER_SIZE)
+  graphics.destroy()
+}
+
+export class Hunter {
+  private readonly brain: HunterBrain
+  private readonly sprite: Phaser.GameObjects.Sprite
+  private readonly useEstouroSprite: boolean
+  private currentCell: CellPosition
+  /** 1 = normal; menor que 1 na lama. */
+  speedMultiplier = 1
+  /** Atordoado (escudo do Pipoca): não se move nem percebe. */
+  private stunnedMs = 0
+  private targetCell: CellPosition
+
+  constructor(
+    scene: Phaser.Scene,
+    maze: MazeCell[][],
+    startCell: CellPosition,
+    private readonly settings: HunterSettings,
+  ) {
+    this.useEstouroSprite = ensureAnimations(
+      scene,
+      ESTOURO_TEXTURE,
+      ESTOURO_ANIMATIONS,
+    )
+
+    if (!this.useEstouroSprite) {
+      createHunterTexture(scene)
+    }
+
+    this.brain = new HunterBrain(maze)
+    this.currentCell = startCell
+
+    const start = cellCenter(startCell)
+
+    this.sprite = scene.add.sprite(
+      start.x,
+      start.y,
+      this.useEstouroSprite ? ESTOURO_TEXTURE : HUNTER_TEXTURE,
+    )
+    this.sprite.setLighting(true)
+    this.sprite.setDepth(9)
+
+    this.targetCell = this.brain.nextCell(startCell)
+  }
+
+  get position(): Point {
+    return { x: this.sprite.x, y: this.sprite.y }
+  }
+
+  get state(): HunterState {
+    return this.brain.state
+  }
+
+  /** Perdeu o jogador de vista (ele se escondeu). */
+  loseTrack(): void {
+    this.brain.loseTrack()
+  }
+
+  /** Ouviu um barulho em uma célula e vai conferir. */
+  hearNoise(cell: CellPosition): void {
+    this.brain.hearNoise(cell)
+  }
+
+  /** O objeto de cena, para que outras câmeras (como o minimapa) possam ignorá-lo. */
+  get gameObject(): Phaser.GameObjects.Sprite {
+    return this.sprite
+  }
+
+  /** Paralisa o Estouro por um tempo; ele pisca enquanto está atordoado. */
+  stun(ms: number): void {
+    this.stunnedMs = ms
+  }
+
+  update(
+    deltaMs: number,
+    playerCell: CellPosition,
+    playerPosition: Point,
+    perceivesPlayer: boolean,
+  ): void {
+    if (this.stunnedMs > 0) {
+      this.stunnedMs -= deltaMs
+      this.sprite.setAlpha(this.stunnedMs > 0 ? 0.45 : 1)
+
+      return
+    }
+
+    this.brain.update({
+      deltaMs,
+      hunterCell: this.currentCell,
+      playerCell,
+      perceivesPlayer,
+    })
+
+    if (this.useEstouroSprite) {
+      this.sprite.anims.play(estouroAnimationFor(this.brain.state), true)
+    }
+
+    let remaining =
+      (this.currentSpeed() * this.speedMultiplier * deltaMs) / 1000
+
+    if (this.brain.shouldChaseDirectly(this.currentCell, playerCell)) {
+      // Jogador na mesma célula: vai direto até ele. Com passo de 3 tiles, a área
+      // da célula inclui os tiles de abertura (topo e esquerda) e a árvore do
+      // canto, então a linha reta pode visualmente roçar essa árvore. O caçador
+      // não tem física e a captura não é afetada.
+      this.moveToward(playerPosition, remaining)
+      return
+    }
+
+    // Anda de centro em centro; se sobrar movimento ao chegar, segue para a próxima célula.
+    while (remaining > 0) {
+      const target = cellCenter(this.targetCell)
+      const distance = this.moveToward(target, remaining)
+
+      if (distance > remaining) {
+        return
+      }
+
+      remaining -= distance
+      this.currentCell = this.targetCell
+      this.targetCell = this.brain.nextCell(this.currentCell)
+
+      const standingStill =
+        this.targetCell.row === this.currentCell.row &&
+        this.targetCell.column === this.currentCell.column
+
+      if (standingStill) {
+        return
+      }
+    }
+  }
+
+  destroy(): void {
+    this.sprite.destroy()
+  }
+
+  /**
+   * Anda até `maxDistance` em direção a `target`, sem passar dele.
+   * Retorna a distância que existia até o alvo antes de andar.
+   */
+  private moveToward(target: Point, maxDistance: number): number {
+    const distance = Phaser.Math.Distance.Between(
+      this.sprite.x,
+      this.sprite.y,
+      target.x,
+      target.y,
+    )
+
+    if (distance <= maxDistance) {
+      this.sprite.setPosition(target.x, target.y)
+      return distance
+    }
+
+    const angle = Phaser.Math.Angle.Between(
+      this.sprite.x,
+      this.sprite.y,
+      target.x,
+      target.y,
+    )
+
+    this.sprite.x += Math.cos(angle) * maxDistance
+    this.sprite.y += Math.sin(angle) * maxDistance
+
+    return distance
+  }
+
+  private currentSpeed(): number {
+    switch (this.brain.state) {
+      case 'wandering':
+        return this.settings.wanderSpeed
+      case 'investigating':
+        return this.settings.investigateSpeed
+      case 'hunting':
+        return this.settings.huntSpeed
+    }
+  }
+}

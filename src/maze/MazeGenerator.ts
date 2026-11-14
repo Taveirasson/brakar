@@ -38,6 +38,7 @@ export class MazeGenerator {
   constructor(
     private readonly rows: number,
     private readonly columns: number,
+    private readonly random: () => number = Math.random,
   ) {
     if (rows < 1 || columns < 1) {
       throw new Error(
@@ -129,7 +130,7 @@ export class MazeGenerator {
   }
 
   private pickRandom<T>(values: T[]): T {
-    const randomIndex = Math.floor(Math.random() * values.length)
+    const randomIndex = Math.floor(this.random() * values.length)
 
     const selectedValue = values[randomIndex]
 

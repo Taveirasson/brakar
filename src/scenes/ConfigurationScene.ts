@@ -1,12 +1,20 @@
 import Phaser from 'phaser'
 import { SCENE_KEYS } from '../config/sceneKeys'
 import { createTextButton } from '../ui/createTextButton'
+import { enableKeyboardMenu } from '../ui/menuNavigation'
 import {
   getSavedMazeSize,
   MAZE_SIZES,
   saveMazeSize,
 } from '../config/mazeSettings'
+import {
+  DIFFICULTY_LABELS,
+  getDifficulty,
+  nextDifficulty,
+  saveDifficulty,
+} from '../config/difficulty'
 import type { NotificationScene } from './NotificationScene'
+import { addPanel, addText } from '../ui/theme'
 
 export class ConfigurationScene extends Phaser.Scene {
   constructor() {
@@ -17,22 +25,11 @@ export class ConfigurationScene extends Phaser.Scene {
     const centerX = this.scale.width / 2
     const centerY = this.scale.height / 2
 
-    this.add
-      .text(centerX, centerY - 100, 'CONFIGURAÇÕES', {
-        fontFamily: 'monospace',
-        fontSize: '32px',
-        color: '#9b5de5',
-      })
-      .setOrigin(0.5)
+    addPanel(this, centerX, centerY + 25, 480, 420)
+    addText(this, centerX, centerY - 140, 'CONFIGURAÇÕES', 'heading')
 
     let selectedSize = getSavedMazeSize()
-    this.add
-      .text(centerX, centerY - 45, 'TAMANHO DO LABIRINTO', {
-        fontFamily: 'monospace',
-        fontSize: '20px',
-        color: '#ffffff',
-      })
-      .setOrigin(0.5)
+    addText(this, centerX, centerY - 75, 'TAMANHO DA MATA', 'body')
 
     const dropdown = document.createElement('details')
     dropdown.className = 'maze-dropdown'
@@ -75,15 +72,34 @@ export class ConfigurationScene extends Phaser.Scene {
     })
 
     dropdown.append(trigger, options)
-    this.add.dom(centerX, centerY + 5, dropdown)
+    this.add.dom(centerX, centerY - 30, dropdown)
 
-    createTextButton({
+    let selectedDifficulty = getDifficulty()
+    const difficultyLabel = () =>
+      `DIFICULDADE: ${DIFFICULTY_LABELS[selectedDifficulty]}`
+    const difficultyButton = createTextButton({
       scene: this,
       x: centerX,
-      y: centerY + 80,
+      y: centerY + 40,
+      label: difficultyLabel(),
+      width: 300,
+      onClick: () => {
+        selectedDifficulty = nextDifficulty(selectedDifficulty)
+        ;(difficultyButton.list[1] as Phaser.GameObjects.Text).setText(
+          difficultyLabel(),
+        )
+      },
+    })
+
+    const saveButton = createTextButton({
+      scene: this,
+      x: centerX,
+      y: centerY + 105,
       label: 'SALVAR',
+      width: 300,
       onClick: () => {
         saveMazeSize(selectedSize)
+        saveDifficulty(selectedDifficulty)
         this.showSavedNotification()
       },
     })
@@ -91,11 +107,17 @@ export class ConfigurationScene extends Phaser.Scene {
     createTextButton({
       scene: this,
       x: centerX,
-      y: centerY + 140,
+      y: centerY + 165,
       label: 'VOLTAR',
+      width: 300,
       onClick: () => {
         this.returnToMenu()
       },
+    })
+
+    enableKeyboardMenu(this, {
+      primary: saveButton,
+      onBack: () => this.returnToMenu(),
     })
   }
 

@@ -34,6 +34,90 @@ const SEARCH_DIRECTIONS: SearchDirection[] = [
   },
 ]
 
+export interface CellPosition {
+  row: number
+  column: number
+}
+
+export function getOpenNeighbors(
+  maze: MazeCell[][],
+  cell: CellPosition,
+): MazeCell[] {
+  const currentCell = maze[cell.row]?.[cell.column]
+
+  if (!currentCell) {
+    return []
+  }
+
+  const neighbors: MazeCell[] = []
+
+  for (const direction of SEARCH_DIRECTIONS) {
+    if (currentCell.walls[direction.wall]) {
+      continue
+    }
+
+    const neighborCell =
+      maze[cell.row + direction.rowChange]?.[
+        cell.column + direction.columnChange
+      ]
+
+    if (neighborCell) {
+      neighbors.push(neighborCell)
+    }
+  }
+
+  return neighbors
+}
+
+export function findPath(
+  maze: MazeCell[][],
+  from: CellPosition,
+  to: CellPosition,
+): MazeCell[] {
+  const startCell = maze[from.row]?.[from.column]
+  const targetCell = maze[to.row]?.[to.column]
+
+  if (!startCell || !targetCell) {
+    return []
+  }
+
+  const previous = new Map<MazeCell, MazeCell | null>([[startCell, null]])
+  const searchQueue: MazeCell[] = [startCell]
+  let queueIndex = 0
+
+  while (queueIndex < searchQueue.length) {
+    const currentCell = searchQueue[queueIndex]
+    queueIndex++
+
+    if (currentCell === targetCell) {
+      break
+    }
+
+    for (const neighborCell of getOpenNeighbors(maze, currentCell)) {
+      if (previous.has(neighborCell)) {
+        continue
+      }
+
+      previous.set(neighborCell, currentCell)
+      searchQueue.push(neighborCell)
+    }
+  }
+
+  if (!previous.has(targetCell)) {
+    return []
+  }
+
+  const path: MazeCell[] = []
+  let step: MazeCell | null = targetCell
+
+  while (step) {
+    path.unshift(step)
+    step = previous.get(step) ?? null
+  }
+
+  return path
+}
+
 export function findFarthestCell(
   maze: MazeCell[][],
   startRow: number,
@@ -68,22 +152,9 @@ export function findFarthestCell(
 
     const currentDistance = distances[currentCell.row][currentCell.column]
 
-    for (const direction of SEARCH_DIRECTIONS) {
-      const wallExists = currentCell.walls[direction.wall]
-
-      if (wallExists) {
-        continue
-      }
-
-      const neighborRow = currentCell.row + direction.rowChange
-
-      const neighborColumn = currentCell.column + direction.columnChange
-
-      const neighborCell = maze[neighborRow]?.[neighborColumn]
-
-      if (!neighborCell) {
-        continue
-      }
+    for (const neighborCell of getOpenNeighbors(maze, currentCell)) {
+      const neighborRow = neighborCell.row
+      const neighborColumn = neighborCell.column
 
       const neighborWasVisited = distances[neighborRow][neighborColumn] !== -1
 
