@@ -159,6 +159,10 @@ const HIDING_SPOTS_PER_CELL_ROW = 0.6
 const BUSH_SCALE = 1.25
 const POWER_UPS_PER_CELL_ROW = 0.3
 const OPENING_MS = 3200
+const COMPASS_MIN_DISTANCE = 110
+const FIREFLY_MARKER_COLOR = 0xd9ff6b
+/** Fugas totais a partir das quais a seta some: o jogador já sabe se orientar. */
+const COMPASS_VETERAN_ESCAPES = 2
 const NEAR_FIREFLY_MAX_STEPS = 5
 const DAILY_MAZE_SIZE = 10
 const SURVIVAL_MAZE_SIZE = 8
@@ -240,6 +244,7 @@ export class GameScene extends Phaser.Scene {
   private owl?: Phaser.GameObjects.Image
   private owlCooldownMs = 0
   private openingTimer?: Phaser.Time.TimerEvent
+  private veteran = false
   private lastHunterState = ''
   private alertMarker?: Phaser.GameObjects.Text
   private stamina: StaminaState = FULL_STAMINA
@@ -320,6 +325,7 @@ export class GameScene extends Phaser.Scene {
     this.owl = undefined
     this.owlCooldownMs = 0
     this.openingTimer = undefined
+    this.veteran = loadRecords().escapes >= COMPASS_VETERAN_ESCAPES
     this.lastHunterState = ''
     this.alertMarker = undefined
     this.night = this.mode === 'daily' ? 1 : getNight()
@@ -2135,7 +2141,11 @@ export class GameScene extends Phaser.Scene {
         FIREFLY_TEXTURE,
       )
       item.setDepth(6)
-      this.minimapMarkers.push({ cell, color: 0xd9ff6b, object: item })
+      this.minimapMarkers.push({
+        cell,
+        color: FIREFLY_MARKER_COLOR,
+        object: item,
+      })
       ;(item.body as Phaser.Physics.Arcade.StaticBody).setSize(12, 12)
       // Criado depois do minimapa: precisa ser ignorado por ele explicitamente.
       this.minimapCamera.ignore(item)
@@ -2380,6 +2390,69 @@ export class GameScene extends Phaser.Scene {
 
     hud.setDanger(danger)
     this.updateFear(danger)
+    this.updateCompass(hud)
+  }
+
+  /** Seta para o vagalume mais próximo (ou para a estrada, com a saída aberta) nas primeiras fugas. */
+  private updateCompass(hud: HudScene): void {
+    if (this.veteran || !this.compassPhase()) {
+      hud.setCompass(null)
+
+      return
+    }
+
+    const target =
+      this.gamePhase === 'returningToExit'
+        ? { x: this.exit.x, y: this.exit.y, color: 0xffd36a }
+        : this.nearestFirefly()
+
+    if (!target) {
+      hud.setCompass(null)
+
+      return
+    }
+
+    const dx = target.x - this.player.x
+    const dy = target.y - this.player.y
+
+    // perto o bastante para já aparecer na tela: sem seta
+    hud.setCompass(
+      Math.hypot(dx, dy) > COMPASS_MIN_DISTANCE ? Math.atan2(dy, dx) : null,
+      target.color,
+    )
+  }
+
+  private compassPhase(): boolean {
+    return (
+      this.gamePhase === 'searchingItems' ||
+      this.gamePhase === 'returningToExit'
+    )
+  }
+
+  private nearestFirefly():
+    { x: number; y: number; color: number } | undefined {
+    let best: { x: number; y: number; color: number } | undefined
+    let bestDistance = Infinity
+
+    for (const marker of this.minimapMarkers) {
+      const object = marker.object as Phaser.GameObjects.Image
+
+      if (marker.color !== FIREFLY_MARKER_COLOR || !object.active) continue
+
+      const distance = Phaser.Math.Distance.Between(
+        object.x,
+        object.y,
+        this.player.x,
+        this.player.y,
+      )
+
+      if (distance < bestDistance) {
+        bestDistance = distance
+        best = { x: object.x, y: object.y, color: FIREFLY_MARKER_COLOR }
+      }
+    }
+
+    return best
   }
 
   /** Treme (rotação aleatória pequena) quando o perigo passa de FEAR_DANGER. */

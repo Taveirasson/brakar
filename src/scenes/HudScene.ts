@@ -26,6 +26,7 @@ export class HudScene extends Phaser.Scene {
   private staminaExhausted = false
   private hiddenLabel!: Phaser.GameObjects.Text
   private tutorialLabel?: Phaser.GameObjects.Text
+  private compass?: Phaser.GameObjects.Triangle
   private modifierLabel!: Phaser.GameObjects.Text
   private powerUpLabel!: Phaser.GameObjects.Text
   private danger = 0
@@ -102,6 +103,17 @@ export class HudScene extends Phaser.Scene {
       })
       .setOrigin(0.5)
       .setAlpha(0)
+    this.compass = this.add
+      .triangle(0, 0, -9, 9, 0, -11, 9, 9, 0xd9ff6b, 0.85)
+      .setStrokeStyle(2, 0x050a07, 0.8)
+      .setAlpha(0)
+    this.tweens.add({
+      targets: this.compass,
+      scale: { from: 0.85, to: 1.15 },
+      duration: 500,
+      yoyo: true,
+      repeat: -1,
+    })
     this.tutorialLabel = this.add
       .text(this.scale.width / 2, 70, '', {
         ...style,
@@ -170,6 +182,28 @@ export class HudScene extends Phaser.Scene {
     this.modifierLabel?.setText(
       names.length > 0 ? `⚠ ${names.join('  ·  ')}` : '',
     )
+  }
+
+  /** Seta na borda da área de jogo apontando para o alvo (ângulo em radianos); null esconde. */
+  setCompass(angle: number | null, color = 0xd9ff6b): void {
+    if (!this.compass) return
+
+    if (angle === null) {
+      this.compass.setAlpha(0)
+
+      return
+    }
+
+    const radius = Math.min(this.scale.width, this.scale.height) * 0.3
+
+    this.compass
+      .setPosition(
+        this.scale.width / 2 + Math.cos(angle) * radius,
+        this.scale.height / 2 + Math.sin(angle) * radius,
+      )
+      .setRotation(angle + Math.PI / 2)
+      .setFillStyle(color, 0.85)
+      .setAlpha(1)
   }
 
   /** Passo do tutorial no alto da tela; null esconde. */
