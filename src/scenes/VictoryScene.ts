@@ -1,5 +1,6 @@
 import Phaser from 'phaser'
 import { buildShareText, copyText } from '../run/share'
+import { epilogueForNight } from '../run/story'
 import { nextNight } from '../run/runState'
 import { SCENE_KEYS } from '../config/sceneKeys'
 import { createTextButton } from '../ui/createTextButton'
@@ -50,14 +51,14 @@ export class VictoryScene extends Phaser.Scene {
       this,
       centerX,
       centerY - 70,
-      'O Pipoca chegou à beira da estrada.',
+      epilogueForNight(this.night).headline,
       'body',
     )
     addText(
       this,
       centerX,
       centerY - 38,
-      'Mas o carro já tinha seguido... e a mata continua.',
+      epilogueForNight(this.night).detail,
       'muted',
     )
 
