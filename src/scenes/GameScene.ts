@@ -1,4 +1,5 @@
 import Phaser from 'phaser'
+import { applyDifficulty, getDifficulty } from '../config/difficulty'
 import { braidMaze } from '../maze/mazeBraiding'
 import { MazeGenerator, type MazeCell } from '../maze/MazeGenerator'
 import {
@@ -227,7 +228,10 @@ export class GameScene extends Phaser.Scene {
     this.lastHunterState = ''
     this.alertMarker = undefined
     this.night = getNight()
-    this.hunterSettings = hunterSettingsForNight(this.night)
+    this.hunterSettings = applyDifficulty(
+      hunterSettingsForNight(this.night),
+      getDifficulty(),
+    )
 
     this.gamePhase = 'litExploration'
     this.collectedItems = 0
