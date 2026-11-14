@@ -12,11 +12,6 @@ const DUST_MIN_SPEED = 40
 
 const AMBIENT_FIREFLIES = 14
 
-const SHADOW_TEXTURE = 'shadow'
-const SHADOW_ALPHA = 0.6
-const PLAYER_SHADOW = { width: 26, height: 10, offsetY: 13 }
-const HUNTER_SHADOW = { width: 19, height: 8, offsetY: 9 }
-
 const FOG_TEXTURE = 'fog'
 const LEAF_TEXTURE = 'leaf'
 const FOG_PUFFS = 20
@@ -52,22 +47,6 @@ function createDotTexture(
   graphics.fillStyle(color, 1)
   graphics.fillCircle(size / 2, size / 2, size / 4)
   graphics.generateTexture(key, size, size)
-  graphics.destroy()
-}
-
-/** Elipse escura e macia para a sombra no chão sob os personagens. */
-function createShadowTexture(scene: Phaser.Scene): void {
-  if (scene.textures.exists(SHADOW_TEXTURE)) {
-    return
-  }
-
-  const graphics = scene.make.graphics({ x: 0, y: 0 })
-
-  graphics.fillStyle(0x000000, 0.35)
-  graphics.fillEllipse(16, 8, 32, 16)
-  graphics.fillStyle(0x000000, 0.65)
-  graphics.fillEllipse(16, 8, 22, 10)
-  graphics.generateTexture(SHADOW_TEXTURE, 32, 16)
   graphics.destroy()
 }
 
@@ -126,8 +105,6 @@ export class GameEffects {
   private huntPulse?: Phaser.Tweens.Tween
   private hunterSparks?: Phaser.GameObjects.Particles.ParticleEmitter
   private hunterGlow?: Phaser.GameObjects.Light
-  private playerShadow?: Phaser.GameObjects.Image
-  private hunterShadow?: Phaser.GameObjects.Image
   private hunterSprite?: Phaser.GameObjects.Sprite
   private hunting = false
 
@@ -184,25 +161,7 @@ export class GameEffects {
     ambient.setDepth(8)
     this.hide(ambient)
 
-    createShadowTexture(scene)
-    this.playerShadow = this.makeShadow(PLAYER_SHADOW, 9)
-
     this.createAtmosphere(worldPixels)
-  }
-
-  private makeShadow(
-    size: { width: number; height: number },
-    depth: number,
-  ): Phaser.GameObjects.Image {
-    const shadow = this.scene.add
-      .image(0, 0, SHADOW_TEXTURE)
-      .setDisplaySize(size.width, size.height)
-      .setDepth(depth)
-      .setAlpha(SHADOW_ALPHA)
-
-    this.hide(shadow)
-
-    return shadow
   }
 
   /** Névoa rasteira e folhas caindo em volta do Pipoca, para a mata parecer viva. */
@@ -256,8 +215,6 @@ export class GameEffects {
     this.hunterSparks.setDepth(10)
     this.hide(this.hunterSparks)
 
-    this.hunterShadow = this.makeShadow(HUNTER_SHADOW, 8)
-
     // brilho vermelho do pavio: ilumina o chão e as árvores por onde ele passa
     this.hunterSprite = hunter
     this.hunterGlow = this.scene.lights.addLight(
@@ -270,17 +227,6 @@ export class GameEffects {
   }
 
   update(hunterIsHunting: boolean): void {
-    this.playerShadow
-      ?.setPosition(this.player.x, this.player.y + PLAYER_SHADOW.offsetY)
-      .setAlpha(SHADOW_ALPHA * this.player.alpha)
-
-    if (this.hunterShadow && this.hunterSprite?.active) {
-      this.hunterShadow.setPosition(
-        this.hunterSprite.x,
-        this.hunterSprite.y + HUNTER_SHADOW.offsetY,
-      )
-    }
-
     if (this.hunterGlow && this.hunterSprite?.active) {
       const flicker = 1 + 0.15 * Math.sin(this.scene.time.now / 90)
 
