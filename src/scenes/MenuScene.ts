@@ -5,6 +5,7 @@ import { hasSeenIntro } from './IntroScene'
 import { ACHIEVEMENTS, loadEarned } from '../run/achievements'
 import { activeStreak, dateKey, loadDaily } from '../run/daily'
 import { formatTime, loadRecords } from '../run/records'
+import { loadWallet } from '../run/wallet'
 import { resetNight, setGameMode } from '../run/runState'
 import { FONT_FAMILY, addText } from '../ui/theme'
 import {
@@ -86,6 +87,18 @@ export class MenuScene extends Phaser.Scene {
       scene: this,
       x: buttonsX,
       y: 445,
+      label: `LOJA  ·  ${loadWallet().bones} ossos`,
+      onClick: () => {
+        this.scene.start(SCENE_KEYS.shop)
+      },
+    })
+
+    createTextButton({
+      scene: this,
+      x: buttonsX - 55,
+      y: 497,
+      width: 130,
+      fontSize: 18,
       label: 'HISTÓRIA',
       onClick: () => {
         resetNight()
@@ -96,9 +109,11 @@ export class MenuScene extends Phaser.Scene {
 
     createTextButton({
       scene: this,
-      x: buttonsX,
-      y: 500,
-      label: 'CONFIGURAÇÕES',
+      x: buttonsX + 80,
+      y: 497,
+      width: 130,
+      fontSize: 18,
+      label: 'AJUSTES',
       onClick: () => {
         this.openConfigScene()
       },

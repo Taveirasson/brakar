@@ -7,6 +7,9 @@ export type CreateButtonProps = {
   y: number
   label: string
   onClick: () => void
+  /** Largura fixa (px); por padrão se ajusta ao texto (mínimo 220). */
+  width?: number
+  fontSize?: number
 }
 
 const PADDING_X = 26
@@ -20,16 +23,18 @@ export function createTextButton({
   y,
   label,
   onClick,
+  width: fixedWidth,
+  fontSize = 22,
 }: CreateButtonProps): Phaser.GameObjects.Container {
   const text = scene.add
     .text(0, 0, label, {
       fontFamily: FONT_FAMILY,
-      fontSize: '22px',
+      fontSize: `${fontSize}px`,
       color: THEME.text,
     })
     .setOrigin(0.5)
 
-  const width = Math.max(220, text.width + PADDING_X * 2)
+  const width = fixedWidth ?? Math.max(220, text.width + PADDING_X * 2)
   const height = text.height + PADDING_Y * 2
 
   const background = scene.add.graphics()

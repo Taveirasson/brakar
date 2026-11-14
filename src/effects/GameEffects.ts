@@ -1,4 +1,7 @@
 import Phaser from 'phaser'
+import { loadWallet } from '../run/wallet'
+import { trailStyle } from '../run/shopItems'
+import { TRAIL_TEXTURE_KEYS, trailEmitterConfig } from './trail'
 import {
   FIREFLY_TEXTURE,
   createFireflyTexture,
@@ -159,6 +162,7 @@ export class GameEffects {
     createDotTexture(scene, DUST_TEXTURE, 6, 0x8a7356)
     createDotTexture(scene, SPARK_TEXTURE, 4, 0xffb43c)
     createFireflyTexture(scene)
+    createLeafTexture(scene)
 
     const camera = scene.cameras.main
     camera.filters.external.addVignette(
@@ -176,14 +180,13 @@ export class GameEffects {
       0xb3122e,
     )
 
-    this.dust = scene.add.particles(0, 0, DUST_TEXTURE, {
+    // rastro das patas: o estilo vem da loja (poeira, folhas, brasas, estrelas)
+    const style = trailStyle(loadWallet().trail)
+
+    this.dust = scene.add.particles(0, 0, TRAIL_TEXTURE_KEYS[style.texture], {
+      ...trailEmitterConfig(style),
       follow: player,
       followOffset: { x: 0, y: 5 },
-      lifespan: 380,
-      speed: { min: 4, max: 14 },
-      scale: { start: 0.9, end: 0.2 },
-      alpha: { start: 0.55, end: 0 },
-      frequency: 70,
       emitting: false,
     })
     this.dust.setDepth(9)

@@ -10,6 +10,7 @@ import { addBackdrop, addPanel, addText, THEME } from '../ui/theme'
 export class GameOverScene extends Phaser.Scene {
   private night = 1
   private timeMs = 0
+  private bones?: { earned: number; total: number }
   private achievements: string[] = []
   private records?: Records
 
@@ -22,9 +23,11 @@ export class GameOverScene extends Phaser.Scene {
     timeMs?: number
     records?: Records
     achievements?: string[]
+    bones?: { earned: number; total: number }
   }): void {
     this.night = data.night ?? 1
     this.timeMs = data.timeMs ?? 0
+    this.bones = data.bones
     this.achievements = data.achievements ?? []
     this.records = data.records
   }
@@ -35,6 +38,17 @@ export class GameOverScene extends Phaser.Scene {
 
     addBackdrop(this, 0.88)
     addPanel(this, centerX, centerY, 580, 400, 0xc0504f)
+
+    if (this.bones) {
+      addText(
+        this,
+        centerX + 270,
+        centerY - 178,
+        `+${this.bones.earned} ossos  (total ${this.bones.total})`,
+        'muted',
+        THEME.title,
+      ).setOrigin(1, 0.5)
+    }
     addText(
       this,
       centerX,

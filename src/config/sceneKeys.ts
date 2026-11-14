@@ -4,6 +4,7 @@ export const SCENE_KEYS = {
   pause: 'PauseScene',
   lockedExit: 'LockedExitScene',
   intro: 'IntroScene',
+  shop: 'ShopScene',
   hud: 'HudScene',
   notifications: 'NotificationScene',
   victory: 'VictoryScene',

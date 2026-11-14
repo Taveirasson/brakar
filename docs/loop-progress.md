@@ -41,7 +41,7 @@ Ideias pendentes (por ordem): itens com efeito, conquistas.
 
 Ordem planejada (marque ao concluir):
 1. [x] Desafio do dia: mesmo labirinto para todos no dia (semente = data), sequência de dias seguidos, melhor tempo do dia, botão no menu, compartilhar com 🔥. src/run/seed.ts, src/run/daily.ts. Testado (mesmo labirinto em dois carregamentos).
-2. [ ] Meta-progressão: ossos viram moeda guardada; loja de colares/cosméticos para o Pipoca.
+2. [x] Meta-progressão: ossos coletados + bônus de fuga (3 + noite-1) viram moeda salva (src/run/wallet.ts); ShopScene com 4 pelagens (tint) e 3 rastros de patas (folhas, brasas, estrelas) com preview; botão LOJA no menu (menu agora: INICIAR, DESAFIO, LOJA, HISTÓRIA/AJUSTES). Testado (compra, equipar, tint e rastro no jogo, banco de ossos).
 3. [ ] Modificadores de noite (ex.: névoa densa, lua cheia, Estouro duplo, lama em todo lugar) com recompensa maior.
 4. [ ] Power-ups no labirinto (isca de vagalume, escudo de uma batida, passo rápido).
 5. [ ] Missões diárias/semanais (ex.: 'esconda-se 3 vezes') com recompensa de moeda.

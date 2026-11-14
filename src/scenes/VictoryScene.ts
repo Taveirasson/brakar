@@ -15,6 +15,7 @@ export class VictoryScene extends Phaser.Scene {
   private night = 1
   private achievements: string[] = []
   private mode: GameMode = 'normal'
+  private bones?: { earned: number; total: number }
   private daily?: { streak: number; isNewBest: boolean; bestMs?: number }
 
   constructor() {
@@ -28,6 +29,7 @@ export class VictoryScene extends Phaser.Scene {
     night?: number
     achievements?: string[]
     mode?: GameMode
+    bones?: { earned: number; total: number }
     daily?: { streak: number; isNewBest: boolean; bestMs?: number }
   }): void {
     this.timeMs = data.timeMs ?? 0
@@ -36,6 +38,7 @@ export class VictoryScene extends Phaser.Scene {
     this.night = data.night ?? 1
     this.achievements = data.achievements ?? []
     this.mode = data.mode ?? 'normal'
+    this.bones = data.bones
     this.daily = data.daily
   }
 
@@ -47,6 +50,17 @@ export class VictoryScene extends Phaser.Scene {
     // confete entre o fundo escuro e o painel
     this.launchConfetti()
     addPanel(this, centerX, centerY, 580, 400)
+
+    if (this.bones) {
+      addText(
+        this,
+        centerX + 270,
+        centerY - 178,
+        `+${this.bones.earned} ossos  (total ${this.bones.total})`,
+        'muted',
+        THEME.title,
+      ).setOrigin(1, 0.5)
+    }
     addText(
       this,
       centerX,

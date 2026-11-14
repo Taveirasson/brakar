@@ -46,6 +46,8 @@ import { hidingSpotOffset, pickHidingCells } from '../maze/HidingSpotPlacement'
 import { FONT_FAMILY } from '../ui/theme'
 import { touchInput } from '../input/touchInput'
 import { sfx, toggleMuted } from '../audio/sfx'
+import { addBones, bonesForRun, loadWallet } from '../run/wallet'
+import { skinTint } from '../run/shopItems'
 import { getGameMode, getNight, type GameMode } from '../run/runState'
 import { unlockAchievements } from '../run/achievements'
 import { loadRecords, recordCaught, recordEscape } from '../run/records'
@@ -713,6 +715,10 @@ export class GameScene extends Phaser.Scene {
     // O frame do Pipoca tem 32 px, mas a hitbox continua do tamanho de antes (centralizada).
     this.player.setBodySize(PLAYER_SIZE - 2, PLAYER_SIZE - 2)
 
+    if (this.usePipocaSprite) {
+      this.player.setTint(skinTint(loadWallet().skin))
+    }
+
     this.player.setCollideWorldBounds(true)
     this.player.setDepth(10)
     this.player.setDrag(500 * MOVEMENT_SCALE, 500 * MOVEMENT_SCALE)
@@ -964,6 +970,7 @@ export class GameScene extends Phaser.Scene {
     const daily = this.mode === 'daily' ? recordDailyEscape(timeMs) : undefined
     const result = daily ? undefined : recordEscape(timeMs, this.night)
     const achievements = this.earnAchievements(true, timeMs)
+    const bones = this.bankBones(true)
 
     this.physics.pause()
     this.cameras.main.flash(250, 244, 211, 94)
@@ -976,6 +983,7 @@ export class GameScene extends Phaser.Scene {
         night: this.night,
         ...result,
         achievements,
+        bones,
         mode: this.mode,
         daily: daily && {
           streak: daily.streak,
@@ -1410,6 +1418,7 @@ export class GameScene extends Phaser.Scene {
     const records =
       this.mode === 'daily' ? loadRecords() : recordCaught(this.night)
     const achievements = this.earnAchievements(false, timeMs)
+    const bones = this.bankBones(false)
     this.effects?.stop()
     this.player.setVelocity(0, 0)
 
@@ -1426,6 +1435,7 @@ export class GameScene extends Phaser.Scene {
         timeMs,
         records,
         achievements,
+        bones,
         mode: this.mode,
       })
     })
@@ -1521,6 +1531,14 @@ export class GameScene extends Phaser.Scene {
       ease: 'Cubic.Out',
       onComplete: () => shock.destroy(),
     })
+  }
+
+  /** Guarda na carteira os ossos desta tentativa (coletados + bônus de fuga). */
+  private bankBones(escaped: boolean): { earned: number; total: number } {
+    const earned = bonesForRun(this.bonesCollected, escaped, this.night)
+    const wallet = addBones(earned)
+
+    return { earned, total: wallet.bones }
   }
 
   /** Confere as conquistas da tentativa e devolve os títulos das novas. */
