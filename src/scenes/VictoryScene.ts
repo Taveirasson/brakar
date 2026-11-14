@@ -16,6 +16,7 @@ export class VictoryScene extends Phaser.Scene {
   private achievements: string[] = []
   private mode: GameMode = 'normal'
   private bones?: { earned: number; total: number }
+  private survival?: { gained: number; total: number; best: number }
   private daily?: { streak: number; isNewBest: boolean; bestMs?: number }
 
   constructor() {
@@ -30,6 +31,13 @@ export class VictoryScene extends Phaser.Scene {
     achievements?: string[]
     mode?: GameMode
     bones?: { earned: number; total: number }
+    survival?: {
+      gained: number
+      total: number
+      best: number
+      isNewBest?: boolean
+      nights?: number
+    }
     daily?: { streak: number; isNewBest: boolean; bestMs?: number }
   }): void {
     this.timeMs = data.timeMs ?? 0
@@ -40,6 +48,7 @@ export class VictoryScene extends Phaser.Scene {
     this.mode = data.mode ?? 'normal'
     this.bones = data.bones
     this.daily = data.daily
+    this.survival = data.survival
   }
 
   create(): void {
@@ -155,6 +164,13 @@ export class VictoryScene extends Phaser.Scene {
           ? `MELHOR DE HOJE: ${formatTime(this.timeMs)}`
           : `Tempo: ${formatTime(this.timeMs)}`,
         `Melhor de hoje: ${formatTime(this.daily?.bestMs ?? this.timeMs)}  ·  🔥 ${streak} ${streak === 1 ? 'dia' : 'dias'}`,
+      ]
+    }
+
+    if (this.survival) {
+      return [
+        `+${this.survival.gained} pontos  ·  Tempo: ${formatTime(this.timeMs)}`,
+        `Total: ${this.survival.total}  ·  Recorde: ${this.survival.best}`,
       ]
     }
 

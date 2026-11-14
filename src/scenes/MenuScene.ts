@@ -66,7 +66,7 @@ export class MenuScene extends Phaser.Scene {
     createTextButton({
       scene: this,
       x: buttonsX,
-      y: 335,
+      y: 300,
       label: 'INICIAR',
       onClick: () => {
         this.startGame()
@@ -76,7 +76,7 @@ export class MenuScene extends Phaser.Scene {
     createTextButton({
       scene: this,
       x: buttonsX,
-      y: 390,
+      y: 350,
       label: 'DESAFIO DO DIA',
       onClick: () => {
         resetNight()
@@ -88,7 +88,19 @@ export class MenuScene extends Phaser.Scene {
     createTextButton({
       scene: this,
       x: buttonsX,
-      y: 445,
+      y: 400,
+      label: 'SOBREVIVÊNCIA',
+      onClick: () => {
+        resetNight()
+        setGameMode('survival')
+        this.scene.start(SCENE_KEYS.game)
+      },
+    })
+
+    createTextButton({
+      scene: this,
+      x: buttonsX,
+      y: 450,
       label: `LOJA  ·  ${loadWallet().bones} ossos`,
       onClick: () => {
         this.scene.start(SCENE_KEYS.shop)
@@ -98,7 +110,7 @@ export class MenuScene extends Phaser.Scene {
     createTextButton({
       scene: this,
       x: buttonsX - 55,
-      y: 497,
+      y: 500,
       width: 130,
       fontSize: 18,
       label: 'HISTÓRIA',
@@ -112,7 +124,7 @@ export class MenuScene extends Phaser.Scene {
     createTextButton({
       scene: this,
       x: buttonsX + 80,
-      y: 497,
+      y: 500,
       width: 130,
       fontSize: 18,
       label: 'AJUSTES',

@@ -12,10 +12,23 @@ export function nextNight(): number {
 
 export function resetNight(): void {
   currentNight = 1
+  currentScore = 0
+}
+
+/** Pontos acumulados na corrida de sobrevivência (em memória). */
+let currentScore = 0
+
+export function getScore(): number {
+  return currentScore
+}
+
+export function addScore(points: number): number {
+  currentScore += Math.max(0, Math.floor(points))
+  return currentScore
 }
 
 /** Normal: noites seguidas com labirinto aleatório. Diário: o mesmo labirinto para todos no dia. */
-export type GameMode = 'normal' | 'daily'
+export type GameMode = 'normal' | 'daily' | 'survival'
 
 let currentMode: GameMode = 'normal'
 

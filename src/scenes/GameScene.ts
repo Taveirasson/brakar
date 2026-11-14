@@ -48,9 +48,20 @@ import { touchInput } from '../input/touchInput'
 import { sfx, toggleMuted } from '../audio/sfx'
 import { addBones, bonesForRun, loadWallet } from '../run/wallet'
 import { skinTint } from '../run/shopItems'
-import { getGameMode, getNight, type GameMode } from '../run/runState'
+import {
+  addScore,
+  getGameMode,
+  getNight,
+  getScore,
+  type GameMode,
+} from '../run/runState'
 import { unlockAchievements } from '../run/achievements'
 import { recordMissions } from '../run/missions'
+import {
+  loadSurvivalBest,
+  recordSurvival,
+  scoreForNight,
+} from '../run/survival'
 import { loadRecords, recordCaught, recordEscape } from '../run/records'
 import { NIGHT_LIGHTING } from '../vision/moonlight'
 import {
@@ -134,6 +145,7 @@ const HIDING_SPOTS_PER_CELL_ROW = 0.6
 const BUSH_SCALE = 1.25
 const POWER_UPS_PER_CELL_ROW = 0.3
 const DAILY_MAZE_SIZE = 10
+const SURVIVAL_MAZE_SIZE = 8
 
 // Pipoca com medo: treme quando o Estouro chega perto.
 const FEAR_DANGER = 0.55
@@ -257,7 +269,12 @@ export class GameScene extends Phaser.Scene {
 
   create(): void {
     this.mode = getGameMode()
-    this.mazeSize = this.mode === 'daily' ? DAILY_MAZE_SIZE : getSavedMazeSize()
+    this.mazeSize =
+      this.mode === 'daily'
+        ? DAILY_MAZE_SIZE
+        : this.mode === 'survival'
+          ? SURVIVAL_MAZE_SIZE
+          : getSavedMazeSize()
     this.random =
       this.mode === 'daily'
         ? createSeededRandom(hashString(`brakar-${dateKey()}`))
@@ -1015,7 +1032,10 @@ export class GameScene extends Phaser.Scene {
 
     const timeMs = Math.round(this.elapsedMs)
     const daily = this.mode === 'daily' ? recordDailyEscape(timeMs) : undefined
-    const result = daily ? undefined : recordEscape(timeMs, this.night)
+    const survival =
+      this.mode === 'survival' ? this.survivalEscape(timeMs) : undefined
+    const result =
+      daily || survival ? undefined : recordEscape(timeMs, this.night)
     const missions = this.missionReward(true, timeMs)
     const achievements = this.earnAchievements(true, timeMs)
     const bones = this.bankBones(true, missions.reward)
@@ -1033,6 +1053,7 @@ export class GameScene extends Phaser.Scene {
         achievements: [...achievements, ...missions.titles],
         bones,
         mode: this.mode,
+        survival,
         daily: daily && {
           streak: daily.streak,
           isNewBest: daily.isNewBest,
@@ -1627,8 +1648,9 @@ export class GameScene extends Phaser.Scene {
     sfx.stopDrone()
     sfx.caught()
     const timeMs = Math.round(this.elapsedMs)
+    const survival = this.mode === 'survival' ? this.survivalOver() : undefined
     const records =
-      this.mode === 'daily' ? loadRecords() : recordCaught(this.night)
+      this.mode === 'normal' ? recordCaught(this.night) : loadRecords()
     const missions = this.missionReward(false, timeMs)
     const achievements = this.earnAchievements(false, timeMs)
     const bones = this.bankBones(false, missions.reward)
@@ -1650,8 +1672,47 @@ export class GameScene extends Phaser.Scene {
         achievements: [...achievements, ...missions.titles],
         bones,
         mode: this.mode,
+        survival,
       })
     })
+  }
+
+  /** Soma os pontos da noite vencida na corrida de sobrevivência. */
+  private survivalEscape(timeMs: number): {
+    gained: number
+    total: number
+    best: number
+  } {
+    const gained = scoreForNight({
+      night: this.night,
+      timeMs,
+      bones: this.bonesCollected,
+      hides: this.hides,
+    })
+    const total = addScore(gained)
+
+    return { gained, total, best: Math.max(total, loadSurvivalBest().score) }
+  }
+
+  /** Fim da corrida de sobrevivência: guarda o recorde. */
+  private survivalOver(): {
+    gained: number
+    total: number
+    best: number
+    isNewBest: boolean
+    nights: number
+  } {
+    const total = getScore()
+    const nights = this.night - 1
+    const result = recordSurvival(total, nights)
+
+    return {
+      gained: 0,
+      total,
+      best: result.best.score,
+      isNewBest: result.isNewBest,
+      nights,
+    }
   }
 
   /** "!" quando o Estouro começa a caçar, "?" quando ele ouve algo: dá tempo de reagir. */
@@ -2029,7 +2090,11 @@ export class GameScene extends Phaser.Scene {
       this.gamePhase === 'returningToExit'
 
     hud.setTime(this.elapsedMs)
-    hud.setNight(this.night, this.mode === 'daily')
+    hud.setNight(
+      this.night,
+      this.mode === 'daily',
+      this.mode === 'survival' ? getScore() : undefined,
+    )
     this.shieldRing?.setPosition(this.player.x, this.player.y)
     hud.setPowerUps(
       this.shieldActive,

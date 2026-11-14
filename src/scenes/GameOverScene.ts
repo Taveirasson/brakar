@@ -13,6 +13,12 @@ export class GameOverScene extends Phaser.Scene {
   private bones?: { earned: number; total: number }
   private achievements: string[] = []
   private records?: Records
+  private survival?: {
+    total: number
+    best: number
+    isNewBest?: boolean
+    nights?: number
+  }
 
   constructor() {
     super(SCENE_KEYS.gameOver)
@@ -24,12 +30,20 @@ export class GameOverScene extends Phaser.Scene {
     records?: Records
     achievements?: string[]
     bones?: { earned: number; total: number }
+    survival?: {
+      gained: number
+      total: number
+      best: number
+      isNewBest?: boolean
+      nights?: number
+    }
   }): void {
     this.night = data.night ?? 1
     this.timeMs = data.timeMs ?? 0
     this.bones = data.bones
     this.achievements = data.achievements ?? []
     this.records = data.records
+    this.survival = data.survival
   }
 
   create(): void {
@@ -61,9 +75,11 @@ export class GameOverScene extends Phaser.Scene {
       this,
       centerX,
       centerY - 70,
-      getGameMode() === 'daily'
-        ? 'Você não escapou do labirinto de hoje. Tente de novo!'
-        : `Você não sobreviveu à noite ${this.night}.`,
+      this.survival
+        ? `Você sobreviveu a ${this.survival.nights ?? 0} ${this.survival.nights === 1 ? 'noite' : 'noites'}.`
+        : getGameMode() === 'daily'
+          ? 'Você não escapou do labirinto de hoje. Tente de novo!'
+          : `Você não sobreviveu à noite ${this.night}.`,
       'body',
     )
 
@@ -83,11 +99,20 @@ export class GameOverScene extends Phaser.Scene {
       this,
       centerX,
       centerY - 22,
-      [
-        `Tempo na mata: ${formatTime(this.timeMs)}`,
-        best ? `Melhor fuga: ${formatTime(best)}` : 'Você ainda não escapou.',
-        `Recorde: noite ${this.records?.bestNight ?? this.night}`,
-      ],
+      this.survival
+        ? [
+            this.survival.isNewBest
+              ? `NOVO RECORDE: ${this.survival.total} pontos`
+              : `Pontuação: ${this.survival.total}`,
+            `Recorde: ${this.survival.best} pontos`,
+          ]
+        : [
+            `Tempo na mata: ${formatTime(this.timeMs)}`,
+            best
+              ? `Melhor fuga: ${formatTime(best)}`
+              : 'Você ainda não escapou.',
+            `Recorde: noite ${this.records?.bestNight ?? this.night}`,
+          ],
       'muted',
     )
 
