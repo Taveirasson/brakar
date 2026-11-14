@@ -1,4 +1,5 @@
 import Phaser from 'phaser'
+import { braidMaze } from '../maze/mazeBraiding'
 import { MazeGenerator, type MazeCell } from '../maze/MazeGenerator'
 import {
   findFarthestCell,
@@ -103,6 +104,10 @@ const HIDING_RADIUS = 26
 const HIDING_MIN_HUNTER_DISTANCE = CELL_PITCH
 const HIDING_SPOTS_PER_CELL_ROW = 0.6
 const BUSH_SCALE = 1.25
+
+// Labirinto: metade dos becos ganha saída e há passagens extras nas paredes.
+const DEAD_END_OPEN_CHANCE = 0.5
+const EXTRA_OPENINGS_PER_ROW = 0.8
 const ALERT_OFFSET_Y = 18
 
 const TIPS_KEY = 'brakar-tips-seen'
@@ -270,6 +275,12 @@ export class GameScene extends Phaser.Scene {
     const generator = new MazeGenerator(this.mazeSize, this.mazeSize)
 
     this.maze = generator.generate()
+
+    // ciclos e passagens extras: rotas alternativas para fugir do Estouro
+    braidMaze(this.maze, {
+      deadEndChance: DEAD_END_OPEN_CHANCE,
+      extraOpenings: Math.round(this.mazeSize * EXTRA_OPENINGS_PER_ROW),
+    })
 
     this.exitInformation = findFarthestCell(this.maze, 0, 0)
   }
