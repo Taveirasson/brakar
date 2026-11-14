@@ -199,6 +199,12 @@ export class GameScene extends Phaser.Scene {
   private night = 1
 
   private visitedCells = new Set<string>()
+  /** Vagalumes, ossos e moitas já vistos, para aparecerem no minimapa. */
+  private minimapMarkers: Array<{
+    cell: MazeCell
+    color: number
+    object: Phaser.GameObjects.GameObject
+  }> = []
   private currentMapCellKey = ''
 
   constructor() {
@@ -223,6 +229,7 @@ export class GameScene extends Phaser.Scene {
     this.hidingSpots = []
     this.hidden = false
     this.mudCells = []
+    this.minimapMarkers = []
     this.hides = 0
     this.bonesCollected = 0
     this.timesHunted = 0
@@ -568,6 +575,7 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
+    this.drawMinimapMarkers()
     this.drawMinimapBorder()
     this.drawMinimapExit()
 
@@ -579,6 +587,25 @@ export class GameScene extends Phaser.Scene {
     this.minimapGraphics.fillStyle(MINIMAP_PLAYER_COLOR, 1)
 
     this.minimapGraphics.fillCircle(playerX, playerY, MINIMAP_CELL_SIZE / 2)
+  }
+
+  /** Pontinhos de itens e moitas, só nas células já visitadas e enquanto existirem. */
+  private drawMinimapMarkers(): void {
+    for (const marker of this.minimapMarkers) {
+      if (
+        !marker.object.active ||
+        !this.visitedCells.has(`${marker.cell.row},${marker.cell.column}`)
+      ) {
+        continue
+      }
+
+      this.minimapGraphics.fillStyle(marker.color, 1)
+      this.minimapGraphics.fillCircle(
+        marker.cell.column * MINIMAP_CELL_SIZE + MINIMAP_CELL_SIZE / 2,
+        marker.cell.row * MINIMAP_CELL_SIZE + MINIMAP_CELL_SIZE / 2,
+        MINIMAP_CELL_SIZE / 4,
+      )
+    }
   }
 
   private drawMinimapBorder(): void {
@@ -1093,6 +1120,7 @@ export class GameScene extends Phaser.Scene {
 
       this.minimapCamera.ignore(bush)
       this.hidingSpots.push(bush)
+      this.minimapMarkers.push({ cell, color: 0x4f9a48, object: bush })
     }
 
     return cells
@@ -1175,6 +1203,7 @@ export class GameScene extends Phaser.Scene {
       )
 
       bone.setDepth(6).setLighting(true)
+      this.minimapMarkers.push({ cell, color: 0xf2ead3, object: bone })
       ;(bone.body as Phaser.Physics.Arcade.StaticBody).setSize(16, 16)
       this.minimapCamera.ignore(bone)
 
@@ -1203,6 +1232,7 @@ export class GameScene extends Phaser.Scene {
     this.hopForJoy()
     this.burstFirefly(bone.x, bone.y)
     bone.destroy()
+    this.drawMinimap(this.getPlayerCell())
     this.bonesCollected++
     this.stamina = FULL_STAMINA
     this.showNotification('OSSO! FÔLEGO RECUPERADO', '#f2ead3', 1200)
@@ -1522,6 +1552,7 @@ export class GameScene extends Phaser.Scene {
         FIREFLY_TEXTURE,
       )
       item.setDepth(6)
+      this.minimapMarkers.push({ cell, color: 0xd9ff6b, object: item })
       ;(item.body as Phaser.Physics.Arcade.StaticBody).setSize(12, 12)
       // Criado depois do minimapa: precisa ser ignorado por ele explicitamente.
       this.minimapCamera.ignore(item)
@@ -1570,6 +1601,7 @@ export class GameScene extends Phaser.Scene {
     this.tweens.killTweensOf(item)
     this.lights.removeLight(glow)
     item.destroy()
+    this.drawMinimap(this.getPlayerCell())
     this.collectedItems++
 
     if (this.collectedItems >= this.requiredItems) {
