@@ -1,4 +1,5 @@
 import Phaser from 'phaser'
+import { isMuted, toggleMuted } from '../audio/sfx'
 import { resetNight } from '../run/runState'
 import { SCENE_KEYS } from '../config/sceneKeys'
 import { createTextButton } from '../ui/createTextButton'
@@ -14,13 +15,13 @@ export class PauseScene extends Phaser.Scene {
     const centerY = this.scale.height / 2
 
     addBackdrop(this, 0.78)
-    addPanel(this, centerX, centerY + 15, 440, 350)
-    addText(this, centerX, centerY - 105, 'PAUSADO', 'heading')
+    addPanel(this, centerX, centerY + 20, 440, 410)
+    addText(this, centerX, centerY - 125, 'PAUSADO', 'heading')
 
     createTextButton({
       scene: this,
       x: centerX,
-      y: centerY - 25,
+      y: centerY - 55,
       label: 'CONTINUAR',
       onClick: () => {
         this.resumeGame()
@@ -30,17 +31,29 @@ export class PauseScene extends Phaser.Scene {
     createTextButton({
       scene: this,
       x: centerX,
-      y: centerY + 45,
+      y: centerY + 10,
       label: 'REINICIAR',
       onClick: () => {
         this.restartGame()
       },
     })
 
+    const soundLabel = () => (isMuted() ? 'SOM: DESLIGADO' : 'SOM: LIGADO')
+    const soundButton = createTextButton({
+      scene: this,
+      x: centerX,
+      y: centerY + 75,
+      label: soundLabel(),
+      onClick: () => {
+        toggleMuted()
+        ;(soundButton.list[1] as Phaser.GameObjects.Text).setText(soundLabel())
+      },
+    })
+
     createTextButton({
       scene: this,
       x: centerX,
-      y: centerY + 115,
+      y: centerY + 140,
       label: 'VOLTAR AO MENU',
       onClick: () => {
         this.returnToMenu()
