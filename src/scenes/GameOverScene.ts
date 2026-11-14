@@ -1,4 +1,5 @@
 import Phaser from 'phaser'
+import { resetNight } from '../run/runState'
 import { SCENE_KEYS } from '../config/sceneKeys'
 import { createTextButton } from '../ui/createTextButton'
 import { formatTime, type Records } from '../run/records'
@@ -49,6 +50,7 @@ export class GameOverScene extends Phaser.Scene {
       [
         `Tempo na mata: ${formatTime(this.timeMs)}`,
         best ? `Melhor fuga: ${formatTime(best)}` : 'Você ainda não escapou.',
+        `Recorde: noite ${this.records?.bestNight ?? this.night}`,
       ],
       'muted',
     )
@@ -82,6 +84,7 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   private restartGame(): void {
+    resetNight()
     this.scene.stop(SCENE_KEYS.game)
     this.scene.start(SCENE_KEYS.game)
   }

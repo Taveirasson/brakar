@@ -9,6 +9,7 @@ const VIGNETTE_TEXTURE = 'danger-vignette'
 export class HudScene extends Phaser.Scene {
   private timer!: Phaser.GameObjects.Text
   private fireflies!: Phaser.GameObjects.Text
+  private nightLabel!: Phaser.GameObjects.Text
   private vignette!: Phaser.GameObjects.Image
   private danger = 0
 
@@ -35,6 +36,11 @@ export class HudScene extends Phaser.Scene {
     }
 
     this.timer = this.add.text(16, 12, '0:00.0', style)
+    this.nightLabel = this.add.text(16, 62, '', {
+      ...style,
+      fontSize: '16px',
+      color: THEME.muted,
+    })
     this.fireflies = this.add.text(16, 38, '', {
       ...style,
       color: THEME.title,
@@ -50,6 +56,10 @@ export class HudScene extends Phaser.Scene {
 
   setTime(ms: number): void {
     this.timer?.setText(formatTime(ms))
+  }
+
+  setNight(night: number): void {
+    this.nightLabel?.setText(`Noite ${night}`)
   }
 
   setFireflies(collected: number, required: number | null): void {

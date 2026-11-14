@@ -32,6 +32,7 @@ import type { HudScene } from './HudScene'
 import type { NotificationScene } from './NotificationScene'
 import { getSavedMazeSize } from '../config/mazeSettings'
 import type { Segment } from '../vision/lineOfSight'
+import { getNight } from '../run/runState'
 import { recordCaught, recordEscape } from '../run/records'
 import { NIGHT_LIGHTING } from '../vision/moonlight'
 import { Hunter } from '../hunter/Hunter'
@@ -40,6 +41,7 @@ import { canPerceivePlayer, isCaught } from '../hunter/hunterPerception'
 import {
   DARK_PERCEPTION_CELLS,
   DEFAULT_HUNTER_SETTINGS,
+  hunterSettingsForNight,
   HUNTER_SIZE,
   type HunterSettings,
 } from '../hunter/hunterSettings'
@@ -135,7 +137,8 @@ export class GameScene extends Phaser.Scene {
 
   private hunter?: Hunter
   private effects?: GameEffects
-  private readonly hunterSettings: HunterSettings = DEFAULT_HUNTER_SETTINGS
+  private hunterSettings: HunterSettings = DEFAULT_HUNTER_SETTINGS
+  private night = 1
 
   private visitedCells = new Set<string>()
   private currentMapCellKey = ''
@@ -157,6 +160,8 @@ export class GameScene extends Phaser.Scene {
     this.worldPixels = worldSize(this.mazeSize)
     this.playerFoundExit = false
     this.elapsedMs = 0
+    this.night = getNight()
+    this.hunterSettings = hunterSettingsForNight(this.night)
 
     this.gamePhase = 'litExploration'
     this.collectedItems = 0
@@ -778,7 +783,7 @@ export class GameScene extends Phaser.Scene {
     this.player.setVelocity(0, 0)
 
     const timeMs = Math.round(this.elapsedMs)
-    const result = recordEscape(timeMs)
+    const result = recordEscape(timeMs, this.night)
 
     this.physics.pause()
     this.cameras.main.flash(250, 244, 211, 94)
@@ -786,7 +791,11 @@ export class GameScene extends Phaser.Scene {
     this.time.delayedCall(300, () => {
       this.clearNotifications()
       this.scene.pause()
-      this.scene.run(SCENE_KEYS.victory, { timeMs, ...result })
+      this.scene.run(SCENE_KEYS.victory, {
+        timeMs,
+        night: this.night,
+        ...result,
+      })
     })
   }
 
@@ -954,7 +963,7 @@ export class GameScene extends Phaser.Scene {
 
     this.gamePhase = 'defeat'
     const timeMs = Math.round(this.elapsedMs)
-    const records = recordCaught()
+    const records = recordCaught(this.night)
     this.effects?.stop()
     this.player.setVelocity(0, 0)
 
@@ -965,7 +974,11 @@ export class GameScene extends Phaser.Scene {
     this.time.delayedCall(CATCH_EFFECT_MS, () => {
       this.clearNotifications()
       this.scene.pause()
-      this.scene.run(SCENE_KEYS.gameOver, { night: 1, timeMs, records })
+      this.scene.run(SCENE_KEYS.gameOver, {
+        night: this.night,
+        timeMs,
+        records,
+      })
     })
   }
 
@@ -1133,6 +1146,7 @@ export class GameScene extends Phaser.Scene {
       this.gamePhase === 'returningToExit'
 
     hud.setTime(this.elapsedMs)
+    hud.setNight(this.night)
     hud.setFireflies(this.collectedItems, searching ? this.requiredItems : null)
     hud.setDanger(this.dangerLevel())
   }

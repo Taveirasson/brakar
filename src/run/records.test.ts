@@ -21,25 +21,29 @@ describe('records', () => {
   it('primeira fuga é recorde; só tempo menor bate o recorde', () => {
     const storage = fakeStorage()
 
-    expect(recordEscape(90000, storage).isNewBest).toBe(true)
-    expect(recordEscape(95000, storage).isNewBest).toBe(false)
+    expect(recordEscape(90000, 1, storage).isNewBest).toBe(true)
+    expect(recordEscape(95000, 1, storage).isNewBest).toBe(false)
 
-    const result = recordEscape(80000, storage)
+    const result = recordEscape(80000, 2, storage)
 
     expect(result.isNewBest).toBe(true)
     expect(result.records).toEqual({
       bestTimeMs: 80000,
       escapes: 3,
       caught: 0,
+      bestNight: 2,
     })
   })
 
   it('conta capturas', () => {
     const storage = fakeStorage()
 
-    recordCaught(storage)
+    recordCaught(3, storage)
 
-    expect(recordCaught(storage).caught).toBe(2)
+    const result = recordCaught(1, storage)
+
+    expect(result.caught).toBe(2)
+    expect(result.bestNight).toBe(3)
   })
 
   it('formata o tempo', () => {

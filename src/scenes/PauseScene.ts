@@ -1,4 +1,5 @@
 import Phaser from 'phaser'
+import { resetNight } from '../run/runState'
 import { SCENE_KEYS } from '../config/sceneKeys'
 import { createTextButton } from '../ui/createTextButton'
 import { addBackdrop, addPanel, addText } from '../ui/theme'
@@ -70,6 +71,7 @@ export class PauseScene extends Phaser.Scene {
   }
 
   private restartGame(): void {
+    resetNight()
     this.scene.stop(SCENE_KEYS.game)
     this.scene.start(SCENE_KEYS.game)
   }

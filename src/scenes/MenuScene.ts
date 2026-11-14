@@ -1,6 +1,7 @@
 import Phaser from 'phaser'
 import { SCENE_KEYS } from '../config/sceneKeys'
 import { createTextButton } from '../ui/createTextButton'
+import { resetNight } from '../run/runState'
 import { addText } from '../ui/theme'
 import {
   FIREFLY_TEXTURE,
@@ -79,6 +80,7 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private startGame(): void {
+    resetNight()
     this.scene.start(SCENE_KEYS.game)
   }
 

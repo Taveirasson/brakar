@@ -1,4 +1,5 @@
 import Phaser from 'phaser'
+import { nextNight } from '../run/runState'
 import { SCENE_KEYS } from '../config/sceneKeys'
 import { createTextButton } from '../ui/createTextButton'
 import { formatTime, type Records } from '../run/records'
@@ -8,6 +9,7 @@ export class VictoryScene extends Phaser.Scene {
   private timeMs = 0
   private records?: Records
   private isNewBest = false
+  private night = 1
 
   constructor() {
     super(SCENE_KEYS.victory)
@@ -17,10 +19,12 @@ export class VictoryScene extends Phaser.Scene {
     timeMs?: number
     records?: Records
     isNewBest?: boolean
+    night?: number
   }): void {
     this.timeMs = data.timeMs ?? 0
     this.records = data.records
     this.isNewBest = data.isNewBest ?? false
+    this.night = data.night ?? 1
   }
 
   create(): void {
@@ -29,7 +33,13 @@ export class VictoryScene extends Phaser.Scene {
 
     addBackdrop(this, 0.88)
     addPanel(this, centerX, centerY, 580, 400)
-    addText(this, centerX, centerY - 130, 'PIPOCA ESCAPOU', 'heading')
+    addText(
+      this,
+      centerX,
+      centerY - 130,
+      `NOITE ${this.night} SUPERADA`,
+      'heading',
+    )
     addText(
       this,
       centerX,
@@ -63,7 +73,7 @@ export class VictoryScene extends Phaser.Scene {
       scene: this,
       x: centerX,
       y: centerY + 80,
-      label: 'JOGAR NOVAMENTE',
+      label: `NOITE ${this.night + 1}`,
       onClick: () => {
         this.restartGame()
       },
@@ -87,6 +97,7 @@ export class VictoryScene extends Phaser.Scene {
   }
 
   private restartGame(): void {
+    nextNight()
     this.scene.stop(SCENE_KEYS.game)
     this.scene.start(SCENE_KEYS.game)
   }

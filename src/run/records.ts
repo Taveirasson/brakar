@@ -3,6 +3,8 @@ export interface Records {
   bestTimeMs: number | null
   escapes: number
   caught: number
+  /** Maior noite alcançada numa run. */
+  bestNight: number
 }
 
 const STORAGE_KEY = 'brakar-records'
@@ -11,6 +13,7 @@ export const EMPTY_RECORDS: Records = {
   bestTimeMs: null,
   escapes: 0,
   caught: 0,
+  bestNight: 1,
 }
 
 function toCount(value: unknown): number {
@@ -32,6 +35,7 @@ export function loadRecords(storage: Pick<Storage, 'getItem'> = localStorage) {
           : null,
       escapes: toCount(data.escapes),
       caught: toCount(data.caught),
+      bestNight: Math.max(1, toCount(data.bestNight)),
     } satisfies Records
   } catch {
     return { ...EMPTY_RECORDS }
@@ -53,6 +57,7 @@ export interface EscapeResult {
 
 export function recordEscape(
   timeMs: number,
+  night: number,
   storage: Pick<Storage, 'getItem' | 'setItem'> = localStorage,
 ): EscapeResult {
   const current = loadRecords(storage)
@@ -61,6 +66,7 @@ export function recordEscape(
     bestTimeMs: isNewBest ? timeMs : current.bestTimeMs,
     escapes: current.escapes + 1,
     caught: current.caught,
+    bestNight: Math.max(current.bestNight, night),
   }
 
   save(records, storage)
@@ -69,10 +75,15 @@ export function recordEscape(
 }
 
 export function recordCaught(
+  night: number,
   storage: Pick<Storage, 'getItem' | 'setItem'> = localStorage,
 ): Records {
   const current = loadRecords(storage)
-  const records: Records = { ...current, caught: current.caught + 1 }
+  const records: Records = {
+    ...current,
+    caught: current.caught + 1,
+    bestNight: Math.max(current.bestNight, night),
+  }
 
   save(records, storage)
 
