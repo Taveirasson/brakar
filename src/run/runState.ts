@@ -27,6 +27,22 @@ export function addScore(points: number): number {
   return currentScore
 }
 
+let openingPending = true
+
+/** A cena do carro tocar só uma vez por corrida: retentativas e noites seguintes entram direto no escuro. */
+export function consumeOpening(): boolean {
+  const play = openingPending
+
+  openingPending = false
+
+  return play
+}
+
+/** Volta ao menu: a próxima corrida terá a abertura de novo. */
+export function resetOpening(): void {
+  openingPending = true
+}
+
 /** Normal: noites seguidas com labirinto aleatório. Diário: o mesmo labirinto para todos no dia. */
 export type GameMode = 'normal' | 'daily' | 'survival'
 

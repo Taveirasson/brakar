@@ -7,7 +7,7 @@ import { activeStreak, dateKey, loadDaily } from '../run/daily'
 import { formatTime, loadRecords } from '../run/records'
 import { loadMissions, missionStatuses } from '../run/missions'
 import { loadWallet } from '../run/wallet'
-import { resetNight, setGameMode } from '../run/runState'
+import { resetNight, resetOpening, setGameMode } from '../run/runState'
 import { FONT_FAMILY, addText } from '../ui/theme'
 import {
   FIREFLY_TEXTURE,
@@ -35,6 +35,7 @@ export class MenuScene extends Phaser.Scene {
   }
 
   create(): void {
+    resetOpening()
     this.createBackdrop()
 
     // a arte ocupa a esquerda com o Pipoca; título no céu escuro e botões

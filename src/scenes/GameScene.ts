@@ -56,6 +56,7 @@ import { skinTint } from '../run/shopItems'
 import {
   addScore,
   getGameMode,
+  consumeOpening,
   getNight,
   getScore,
   type GameMode,
@@ -246,6 +247,7 @@ export class GameScene extends Phaser.Scene {
   private owlCooldownMs = 0
   private openingTimer?: Phaser.Time.TimerEvent
   private veteran = false
+  private openingPlayed = true
   private lastFireflyAt: number | null = null
   private comboBones = 0
   private lastHunterState = ''
@@ -377,10 +379,17 @@ export class GameScene extends Phaser.Scene {
       this.worldPixels,
     )
     this.configurePauseControl()
-    this.cameras.main.fadeIn(500, 5, 10, 7)
+    this.cameras.main.fadeIn(250, 5, 10, 7)
     this.startHud()
     this.startNotificationScene()
-    this.playOpening()
+    if (consumeOpening()) {
+      this.openingPlayed = true
+      this.playOpening()
+    } else {
+      // retentativa ou noite seguinte: direto para o escuro, sem cena
+      this.openingPlayed = false
+      this.beginItemSearch()
+    }
   }
 
   update(_time: number, delta: number): void {
@@ -1251,9 +1260,11 @@ export class GameScene extends Phaser.Scene {
     this.announceModifiers()
     this.startTutorial()
     this.showNotification(
-      'JUNTE 3 VAGALUMES PARA CLAREAR A TRILHA ATÉ A ESTRADA',
+      this.openingPlayed
+        ? 'JUNTE 3 VAGALUMES PARA CLAREAR A TRILHA ATÉ A ESTRADA'
+        : `NOITE ${this.night}: JUNTE ${this.requiredItems} VAGALUMES`,
       '#d9ff6b',
-      2800,
+      this.openingPlayed ? 2800 : 1600,
     )
     this.showTips()
   }
