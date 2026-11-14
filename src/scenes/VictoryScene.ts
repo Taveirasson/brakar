@@ -1,4 +1,5 @@
 import Phaser from 'phaser'
+import { buildShareText, copyText } from '../run/share'
 import { nextNight } from '../run/runState'
 import { SCENE_KEYS } from '../config/sceneKeys'
 import { createTextButton } from '../ui/createTextButton'
@@ -92,8 +93,30 @@ export class VictoryScene extends Phaser.Scene {
     this.input.keyboard?.once('keydown-R', () => this.restartGame())
     this.input.keyboard?.once('keydown-SPACE', () => this.restartGame())
     this.input.keyboard?.once('keydown-ENTER', () => this.restartGame())
+    this.setupShare(
+      addText(this, centerX, centerY + 182, 'C: copiar resultado', 'muted'),
+      true,
+    )
 
     this.cameras.main.fadeIn(400, 5, 10, 7)
+  }
+
+  /** C ou clique: copia o resultado para compartilhar. */
+  private setupShare(label: Phaser.GameObjects.Text, escaped: boolean): void {
+    const share = async () => {
+      const ok = await copyText(
+        buildShareText(
+          { night: this.night, timeMs: this.timeMs, escaped },
+          window.location.href.split('?')[0],
+        ),
+      )
+
+      label.setText(ok ? 'Resultado copiado!' : 'Não consegui copiar')
+    }
+
+    label.setInteractive({ useHandCursor: true })
+    label.on('pointerdown', share)
+    this.input.keyboard?.on('keydown-C', share)
   }
 
   private restartGame(): void {

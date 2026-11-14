@@ -1,4 +1,5 @@
 import Phaser from 'phaser'
+import { buildShareText, copyText } from '../run/share'
 import { resetNight } from '../run/runState'
 import { SCENE_KEYS } from '../config/sceneKeys'
 import { createTextButton } from '../ui/createTextButton'
@@ -46,7 +47,7 @@ export class GameOverScene extends Phaser.Scene {
     addText(
       this,
       centerX,
-      centerY - 30,
+      centerY - 22,
       [
         `Tempo na mata: ${formatTime(this.timeMs)}`,
         best ? `Melhor fuga: ${formatTime(best)}` : 'Você ainda não escapou.',
@@ -78,9 +79,36 @@ export class GameOverScene extends Phaser.Scene {
     this.input.keyboard?.once('keydown-R', () => this.restartGame())
     this.input.keyboard?.once('keydown-SPACE', () => this.restartGame())
     this.input.keyboard?.once('keydown-ENTER', () => this.restartGame())
-    addText(this, centerX, centerY + 175, 'R / ESPAÇO: tentar de novo', 'muted')
+    this.setupShare(
+      addText(
+        this,
+        centerX,
+        centerY + 178,
+        'R: tentar de novo  ·  C: copiar resultado',
+        'muted',
+      ),
+      false,
+    )
 
     this.cameras.main.fadeIn(400, 5, 10, 7)
+  }
+
+  /** C ou clique: copia o resultado para compartilhar. */
+  private setupShare(label: Phaser.GameObjects.Text, escaped: boolean): void {
+    const share = async () => {
+      const ok = await copyText(
+        buildShareText(
+          { night: this.night, timeMs: this.timeMs, escaped },
+          window.location.href.split('?')[0],
+        ),
+      )
+
+      label.setText(ok ? 'Resultado copiado!' : 'Não consegui copiar')
+    }
+
+    label.setInteractive({ useHandCursor: true })
+    label.on('pointerdown', share)
+    this.input.keyboard?.on('keydown-C', share)
   }
 
   private restartGame(): void {
