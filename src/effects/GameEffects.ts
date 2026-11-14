@@ -12,6 +12,16 @@ const DUST_MIN_SPEED = 40
 
 const AMBIENT_FIREFLIES = 14
 
+const FOG_TEXTURE = 'fog'
+const LEAF_TEXTURE = 'leaf'
+const FOG_PUFFS = 20
+const LEAF_COLORS = [0x4f8a3a, 0x6aa84f, 0x8a6a2a, 0xa8863a]
+
+const HUNTER_GLOW_RADIUS = 80
+const HUNTER_GLOW_COLOR = 0xff5a2a
+const HUNTER_GLOW_IDLE = 0.8
+const HUNTER_GLOW_HUNTING = 1.9
+
 // Vinheta do Phaser: dentro do raio a cor entra com sin(d/raio · π · strength) e
 // fora do raio é 100% cor. Raio 1 cobre a tela toda (cantos a ~0,71), então
 // strength 0 desliga de verdade e valores pequenos escurecem só as bordas.
@@ -40,6 +50,51 @@ function createDotTexture(
   graphics.destroy()
 }
 
+/** Mancha macia e translúcida (névoa): gradiente radial desenhado num canvas. */
+function createFogTexture(scene: Phaser.Scene): void {
+  if (scene.textures.exists(FOG_TEXTURE)) {
+    return
+  }
+
+  const size = 128
+  const texture = scene.textures.createCanvas(FOG_TEXTURE, size, size)
+  const context = texture?.getContext()
+
+  if (!texture || !context) {
+    return
+  }
+
+  const gradient = context.createRadialGradient(
+    size / 2,
+    size / 2,
+    0,
+    size / 2,
+    size / 2,
+    size / 2,
+  )
+  gradient.addColorStop(0, 'rgba(190, 205, 235, 0.9)')
+  gradient.addColorStop(1, 'rgba(190, 205, 235, 0)')
+  context.fillStyle = gradient
+  context.fillRect(0, 0, size, size)
+  texture.refresh()
+}
+
+/** Folha pequena (elipse); a cor vem do tint de cada partícula. */
+function createLeafTexture(scene: Phaser.Scene): void {
+  if (scene.textures.exists(LEAF_TEXTURE)) {
+    return
+  }
+
+  const graphics = scene.make.graphics({ x: 0, y: 0 })
+
+  graphics.fillStyle(0xffffff, 1)
+  graphics.fillEllipse(4, 2.5, 7, 4)
+  graphics.fillStyle(0xcccccc, 1)
+  graphics.fillRect(1, 2, 6, 1)
+  graphics.generateTexture(LEAF_TEXTURE, 8, 5)
+  graphics.destroy()
+}
+
 /**
  * Efeitos visuais do jogo, fora do GameScene: vinheta, pulso vermelho durante a
  * caçada, poeira nas patas do Pipoca, vagalumes de enfeite e faíscas do Estouro.
@@ -49,6 +104,8 @@ export class GameEffects {
   private readonly huntVignette: Phaser.Filters.Vignette
   private huntPulse?: Phaser.Tweens.Tween
   private hunterSparks?: Phaser.GameObjects.Particles.ParticleEmitter
+  private hunterGlow?: Phaser.GameObjects.Light
+  private hunterSprite?: Phaser.GameObjects.Sprite
   private hunting = false
 
   constructor(
@@ -103,6 +160,45 @@ export class GameEffects {
     })
     ambient.setDepth(8)
     this.hide(ambient)
+
+    this.createAtmosphere(worldPixels)
+  }
+
+  /** Névoa rasteira e folhas caindo em volta do Pipoca, para a mata parecer viva. */
+  private createAtmosphere(worldPixels: number): void {
+    createFogTexture(this.scene)
+    createLeafTexture(this.scene)
+
+    const fog = this.scene.add.particles(0, 0, FOG_TEXTURE, {
+      x: { min: 0, max: worldPixels },
+      y: { min: 0, max: worldPixels },
+      lifespan: 16000,
+      speedX: { min: 5, max: 12 },
+      speedY: { min: -2, max: 2 },
+      scale: { min: 1.8, max: 3 },
+      alpha: { values: [0, 0.17, 0.17, 0] },
+      frequency: 16000 / FOG_PUFFS,
+      maxAliveParticles: FOG_PUFFS,
+    })
+    fog.setDepth(12)
+    this.hide(fog)
+
+    const leaves = this.scene.add.particles(0, 0, LEAF_TEXTURE, {
+      follow: this.player,
+      x: { min: -260, max: 260 },
+      y: { min: -190, max: -70 },
+      lifespan: 5200,
+      speedY: { min: 14, max: 30 },
+      speedX: { min: -14, max: 14 },
+      rotate: { min: 0, max: 360 },
+      scale: { min: 0.45, max: 0.8 },
+      tint: LEAF_COLORS,
+      alpha: { values: [0, 0.9, 0.9, 0] },
+      frequency: 420,
+      maxAliveParticles: 14,
+    })
+    leaves.setDepth(13)
+    this.hide(leaves)
   }
 
   /** Faíscas que seguem o Estouro; chamado quando ele surge no apagão. */
@@ -118,9 +214,28 @@ export class GameEffects {
     })
     this.hunterSparks.setDepth(10)
     this.hide(this.hunterSparks)
+
+    // brilho vermelho do pavio: ilumina o chão e as árvores por onde ele passa
+    this.hunterSprite = hunter
+    this.hunterGlow = this.scene.lights.addLight(
+      hunter.x,
+      hunter.y,
+      HUNTER_GLOW_RADIUS,
+      HUNTER_GLOW_COLOR,
+      HUNTER_GLOW_IDLE,
+    )
   }
 
   update(hunterIsHunting: boolean): void {
+    if (this.hunterGlow && this.hunterSprite?.active) {
+      const flicker = 1 + 0.15 * Math.sin(this.scene.time.now / 90)
+
+      this.hunterGlow.setPosition(this.hunterSprite.x, this.hunterSprite.y)
+      this.hunterGlow.setIntensity(
+        (hunterIsHunting ? HUNTER_GLOW_HUNTING : HUNTER_GLOW_IDLE) * flicker,
+      )
+    }
+
     const body = this.player.body
     const speed = body ? body.velocity.length() : 0
     this.dust.emitting = speed > DUST_MIN_SPEED
