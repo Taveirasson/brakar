@@ -46,7 +46,7 @@ Ordem planejada (marque ao concluir):
 4. [x] Power-ups (src/run/powerups.ts): orbes no chão (3 por noite no 10x10, um de cada tipo): Escudo (absorve uma captura, atordoa o Estouro 2,5 s e protege 3 s), Pata veloz (+30% por 6 s) e Mapa da mata (revela o minimapa). Anel do escudo, rótulos no HUD, pontos coloridos no minimapa. Testado no navegador (coleta dos 3 tipos, escudo absorvendo a captura).
 5. [x] Missões do dia (src/run/missions.ts): 3 sorteadas pela data (esconder, ossos, vagalumes, fugas, power-ups, fuga sem ser caçado, noite 3), progresso somado entre tentativas e recompensa em ossos paga uma vez; painel no canto do menu e aviso nas telas de fim. Testado no navegador (menu). Semanais ficaram de fora.
 6. [x] Modo sobrevivência (src/run/survival.ts): botão SOBREVIVÊNCIA no menu, labirinto 8x8, noites seguidas sem fim; cada fuga dá pontos (base por noite + ossos + moitas + rapidez), pontos no HUD, derrota mostra pontuação e recorde (pontos e noites). Testado no navegador (vitória, derrota, recorde).
-7. [ ] Tutorial interativo curto na primeira partida.
+7. [x] Tutorial interativo (src/run/tutorial.ts): na 1ª partida normal, instruções no topo do HUD que avançam quando o jogador faz a ação (andar, correr, pegar vagalume, esconder-se); texto próprio para toque; salvo ao concluir e substitui as dicas antigas. Testado no navegador.
 8. [ ] Novo tipo de inimigo ou evento (ex.: coruja que denuncia, Estouro filhote).
 9. [ ] Placar local de melhores tempos por dia / histórico.
 

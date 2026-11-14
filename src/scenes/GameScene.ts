@@ -58,6 +58,12 @@ import {
 import { unlockAchievements } from '../run/achievements'
 import { recordMissions } from '../run/missions'
 import {
+  Tutorial,
+  isTutorialDone,
+  markTutorialDone,
+  type TutorialEvent,
+} from '../run/tutorial'
+import {
   loadSurvivalBest,
   recordSurvival,
   scoreForNight,
@@ -220,6 +226,7 @@ export class GameScene extends Phaser.Scene {
   private bonesCollected = 0
   private timesHunted = 0
   private powerUpsCollected = 0
+  private tutorial?: Tutorial
   private lastHunterState = ''
   private alertMarker?: Phaser.GameObjects.Text
   private stamina: StaminaState = FULL_STAMINA
@@ -296,6 +303,7 @@ export class GameScene extends Phaser.Scene {
     this.bonesCollected = 0
     this.timesHunted = 0
     this.powerUpsCollected = 0
+    this.tutorial = undefined
     this.lastHunterState = ''
     this.alertMarker = undefined
     this.night = this.mode === 'daily' ? 1 : getNight()
@@ -967,6 +975,12 @@ export class GameScene extends Phaser.Scene {
     this.stamina = step.state
     this.sprinting = step.sprinting
 
+    if (horizontalDirection !== 0 || verticalDirection !== 0) {
+      this.tutorialEvent('moved')
+
+      if (step.sprinting) this.tutorialEvent('sprinted')
+    }
+
     const mudFactor = this.isInMud(this.player.x, this.player.y)
       ? MUD_PLAYER_SPEED
       : 1
@@ -1160,6 +1174,7 @@ export class GameScene extends Phaser.Scene {
     this.spawnPowerUps([...itemCells, ...bushCells, ...boneCells])
     this.spawnHunter()
     this.announceModifiers()
+    this.startTutorial()
     this.showTips()
   }
 
@@ -1175,9 +1190,40 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  /** Tutorial interativo: só na noite 1 do modo normal, até o jogador concluir. */
+  private startTutorial(): void {
+    if (this.mode === 'normal' && this.night === 1 && !isTutorialDone()) {
+      this.tutorial = new Tutorial()
+    }
+  }
+
+  private tutorialEvent(event: TutorialEvent): void {
+    this.tutorial?.report(event)
+  }
+
+  private updateTutorial(): void {
+    if (!this.tutorial) return
+
+    const hud = this.scene.get(SCENE_KEYS.hud) as HudScene
+    const step = this.tutorial.current()
+
+    if (!step) {
+      markTutorialDone()
+      this.tutorial = undefined
+      hud.setTutorial(null)
+      this.showNotification('MUITO BEM! AGORA ACHE A SAÍDA', '#9fe870', 2200)
+
+      return
+    }
+
+    hud.setTutorial(
+      this.sys.game.device.input.touch ? step.touchText : step.text,
+    )
+  }
+
   /** Dicas nas duas primeiras partidas; depois o jogador já sabe jogar. */
   private showTips(): void {
-    if (this.night !== 1) {
+    if (this.night !== 1 || this.tutorial) {
       return
     }
 
@@ -1525,6 +1571,7 @@ export class GameScene extends Phaser.Scene {
 
     if (canHide && !this.hidden) {
       this.hides++
+      this.tutorialEvent('hid')
       this.hunter?.loseTrack()
       sfx.rustle()
       this.tweens.add({
@@ -1951,6 +1998,7 @@ export class GameScene extends Phaser.Scene {
     item.destroy()
     this.drawMinimap(this.getPlayerCell())
     this.collectedItems++
+    this.tutorialEvent('firefly')
 
     if (this.collectedItems >= this.requiredItems) {
       this.unlockExit()
@@ -2090,6 +2138,7 @@ export class GameScene extends Phaser.Scene {
       this.gamePhase === 'returningToExit'
 
     hud.setTime(this.elapsedMs)
+    this.updateTutorial()
     hud.setNight(
       this.night,
       this.mode === 'daily',

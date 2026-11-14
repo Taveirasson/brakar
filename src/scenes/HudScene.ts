@@ -25,6 +25,7 @@ export class HudScene extends Phaser.Scene {
   private staminaValue = 1
   private staminaExhausted = false
   private hiddenLabel!: Phaser.GameObjects.Text
+  private tutorialLabel?: Phaser.GameObjects.Text
   private modifierLabel!: Phaser.GameObjects.Text
   private powerUpLabel!: Phaser.GameObjects.Text
   private danger = 0
@@ -101,6 +102,14 @@ export class HudScene extends Phaser.Scene {
       })
       .setOrigin(0.5)
       .setAlpha(0)
+    this.tutorialLabel = this.add
+      .text(this.scale.width / 2, 70, '', {
+        ...style,
+        color: '#ffd36a',
+        align: 'center',
+      })
+      .setOrigin(0.5)
+      .setAlpha(0)
     this.fireflies = this.add.text(16, 38, '', {
       ...style,
       color: THEME.title,
@@ -161,6 +170,17 @@ export class HudScene extends Phaser.Scene {
     this.modifierLabel?.setText(
       names.length > 0 ? `⚠ ${names.join('  ·  ')}` : '',
     )
+  }
+
+  /** Passo do tutorial no alto da tela; null esconde. */
+  setTutorial(text: string | null): void {
+    if (!this.tutorialLabel) return
+
+    if (text !== null && this.tutorialLabel.text !== text) {
+      this.tutorialLabel.setText(text)
+    }
+
+    this.tutorialLabel.setAlpha(text === null ? 0 : 1)
   }
 
   setHidden(hidden: boolean): void {
