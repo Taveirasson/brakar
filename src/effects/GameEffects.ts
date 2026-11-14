@@ -12,6 +12,10 @@ const DUST_MIN_SPEED = 40
 
 const AMBIENT_FIREFLIES = 14
 
+const RAY_TEXTURE = 'moon-ray'
+const MOON_RAYS = 9
+const RAY_COLOR = 0xb4c4ff
+
 const FOG_TEXTURE = 'fog'
 const LEAF_TEXTURE = 'leaf'
 const FOG_PUFFS = 20
@@ -76,6 +80,43 @@ function createFogTexture(scene: Phaser.Scene): void {
   gradient.addColorStop(1, 'rgba(190, 205, 235, 0)')
   context.fillStyle = gradient
   context.fillRect(0, 0, size, size)
+  texture.refresh()
+  texture.setFilter(Phaser.Textures.FilterMode.LINEAR)
+}
+
+/** Feixe de luz da lua: faixa vertical que some nas bordas e nas pontas. */
+function createRayTexture(scene: Phaser.Scene): void {
+  if (scene.textures.exists(RAY_TEXTURE)) {
+    return
+  }
+
+  const width = 64
+  const height = 256
+  const texture = scene.textures.createCanvas(RAY_TEXTURE, width, height)
+  const context = texture?.getContext()
+
+  if (!texture || !context) {
+    return
+  }
+
+  const sides = context.createLinearGradient(0, 0, width, 0)
+  sides.addColorStop(0, 'rgba(255,255,255,0)')
+  sides.addColorStop(0.5, 'rgba(255,255,255,1)')
+  sides.addColorStop(1, 'rgba(255,255,255,0)')
+  context.fillStyle = sides
+  context.fillRect(0, 0, width, height)
+
+  // some nas pontas: mantém só o que a máscara vertical deixa passar
+  context.globalCompositeOperation = 'destination-in'
+
+  const ends = context.createLinearGradient(0, 0, 0, height)
+  ends.addColorStop(0, 'rgba(0,0,0,0)')
+  ends.addColorStop(0.3, 'rgba(0,0,0,1)')
+  ends.addColorStop(0.7, 'rgba(0,0,0,1)')
+  ends.addColorStop(1, 'rgba(0,0,0,0)')
+  context.fillStyle = ends
+  context.fillRect(0, 0, width, height)
+
   texture.refresh()
   texture.setFilter(Phaser.Textures.FilterMode.LINEAR)
 }
@@ -169,6 +210,38 @@ export class GameEffects {
   private createAtmosphere(worldPixels: number): void {
     createFogTexture(this.scene)
     createLeafTexture(this.scene)
+    createRayTexture(this.scene)
+
+    // raios de lua entrando pela copa das árvores: faixas inclinadas que respiram
+    for (let i = 0; i < MOON_RAYS; i++) {
+      const ray = this.scene.add
+        .image(
+          Phaser.Math.Between(0, worldPixels),
+          Phaser.Math.Between(0, worldPixels),
+          RAY_TEXTURE,
+        )
+        .setDepth(11)
+        .setBlendMode(Phaser.BlendModes.ADD)
+        .setTint(RAY_COLOR)
+        .setAngle(Phaser.Math.Between(18, 28))
+        .setScale(
+          Phaser.Math.FloatBetween(1.2, 2.4),
+          Phaser.Math.FloatBetween(1.6, 2.6),
+        )
+        .setAlpha(0)
+
+      this.hide(ray)
+      this.scene.tweens.add({
+        targets: ray,
+        alpha: { from: 0.02, to: Phaser.Math.FloatBetween(0.16, 0.28) },
+        x: ray.x + Phaser.Math.Between(-25, 25),
+        duration: Phaser.Math.Between(3500, 6500),
+        delay: Phaser.Math.Between(0, 3000),
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      })
+    }
 
     const fog = this.scene.add.particles(0, 0, FOG_TEXTURE, {
       x: { min: 0, max: worldPixels },
