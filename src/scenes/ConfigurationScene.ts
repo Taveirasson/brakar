@@ -81,6 +81,7 @@ export class ConfigurationScene extends Phaser.Scene {
       x: centerX,
       y: centerY + 40,
       label: difficultyLabel(),
+      width: 280,
       onClick: () => {
         selectedDifficulty = nextDifficulty(selectedDifficulty)
         ;(difficultyButton.list[1] as Phaser.GameObjects.Text).setText(
@@ -94,6 +95,7 @@ export class ConfigurationScene extends Phaser.Scene {
       x: centerX,
       y: centerY + 105,
       label: 'SALVAR',
+      width: 280,
       onClick: () => {
         saveMazeSize(selectedSize)
         saveDifficulty(selectedDifficulty)
@@ -106,6 +108,7 @@ export class ConfigurationScene extends Phaser.Scene {
       x: centerX,
       y: centerY + 165,
       label: 'VOLTAR',
+      width: 280,
       onClick: () => {
         this.returnToMenu()
       },

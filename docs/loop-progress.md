@@ -92,9 +92,9 @@ Ordem planejada (marque ao concluir; cada item conferido por captura e commitado
 1. [x] (feito, conferido por captura) Notificações: caixa se ajusta ao texto (quebra de linha, largura máx.), posição que não cobre o HUD; tutorial vai para a parte de baixo.
 2. [x] (feito: ui/overlayHud.ts; conferido por captura) Esconder o HUD e as notificações enquanto pausa/vitória/derrota/bênção estão abertas; restaurar ao voltar.
 3. [x] (feito: linha inferior alinhada, recordes em 2-4 linhas + botão HISTÓRICO, missões em painel; títulos das missões encurtados; conferido por captura) Menu: linha inferior alinhada à coluna, recordes compactos (4 linhas), "Ver histórico" como botão pequeno, missões com fundo translúcido sem cobrir a bomba.
-4. [ ] Histórico: colunas centradas em 960, espaçamento e alinhamento das listas.
-5. [ ] Vitória/derrota: ritmo vertical (estatísticas, conquistas com quebra de linha, botões), painel com folga.
-6. [ ] Configurações, Bênçãos e Loja: larguras iguais, espaçamentos e margens.
+4. [x] (feito, conferido por captura) Histórico: colunas centradas em 960, espaçamento e alinhamento das listas.
+5. [x] (feito: painel 440, conquistas com quebra de linha via addAchievements; conferido por captura) Vitória/derrota: ritmo vertical (estatísticas, conquistas com quebra de linha, botões), painel com folga.
+6. [x] (feito, conferido por captura) Configurações, Bênçãos e Loja: larguras iguais, espaçamentos e margens.
 7. [ ] Celular: fontes mínimas maiores, botões mais altos em tela de toque, dica de toque na história e nas telas.
 8. [ ] Teclado no menu: setas + Enter navegam pelos botões (foco visível), ESC volta nas subtelas.
 9. [ ] Nova rodada de captura (PC e celular) para conferir tudo e corrigir o que sobrou.

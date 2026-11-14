@@ -8,8 +8,8 @@ import { averageFirstFirefly, loadHook } from '../run/hook'
 import { createTextButton } from '../ui/createTextButton'
 import { addBackdrop, addPanel, addText, THEME } from '../ui/theme'
 
-const LEFT_X = 330
-const RIGHT_X = 770
+const LEFT_X = 270
+const RIGHT_X = 690
 
 /** Placar local: melhores fugas, últimos desafios do dia e recorde de sobrevivência. */
 export class HistoryScene extends Phaser.Scene {
@@ -24,6 +24,9 @@ export class HistoryScene extends Phaser.Scene {
     addPanel(this, centerX, 270, 900, 500)
     addText(this, centerX, 52, 'HISTÓRICO', 'heading')
 
+    this.add
+      .rectangle(centerX, 190, 1, 150, THEME.buttonBorder, 0.35)
+      .setOrigin(0.5)
     addText(this, LEFT_X, 112, 'MELHORES FUGAS', 'muted', THEME.title)
     const best = loadHistory()
 
@@ -50,7 +53,7 @@ export class HistoryScene extends Phaser.Scene {
     addText(
       this,
       centerX,
-      350,
+      336,
       survival.score > 0
         ? `Sobrevivência: ${survival.score} pontos  ·  ${survival.nights} ${survival.nights === 1 ? 'noite' : 'noites'}`
         : 'Sobrevivência: ainda sem corrida',
@@ -64,7 +67,7 @@ export class HistoryScene extends Phaser.Scene {
     addText(
       this,
       centerX,
-      395,
+      380,
       [
         average === null
           ? 'Gancho: ainda sem dados'
@@ -79,7 +82,7 @@ export class HistoryScene extends Phaser.Scene {
     createTextButton({
       scene: this,
       x: centerX,
-      y: 492,
+      y: 474,
       label: 'VOLTAR',
       onClick: () => this.scene.start(SCENE_KEYS.menu),
     })

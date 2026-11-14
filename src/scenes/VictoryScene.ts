@@ -7,7 +7,13 @@ import { SCENE_KEYS } from '../config/sceneKeys'
 import { setGameHudVisible } from '../ui/overlayHud'
 import { createTextButton } from '../ui/createTextButton'
 import { formatTime, type Records } from '../run/records'
-import { addBackdrop, addPanel, addText, THEME } from '../ui/theme'
+import {
+  addAchievements,
+  addBackdrop,
+  addPanel,
+  addText,
+  THEME,
+} from '../ui/theme'
 
 export class VictoryScene extends Phaser.Scene {
   private timeMs = 0
@@ -60,13 +66,13 @@ export class VictoryScene extends Phaser.Scene {
     addBackdrop(this, 0.88)
     // confete entre o fundo escuro e o painel
     this.launchConfetti()
-    addPanel(this, centerX, centerY, 580, 400)
+    addPanel(this, centerX, centerY, 580, 440)
 
     if (this.bones) {
       addText(
         this,
         centerX + 270,
-        centerY - 178,
+        centerY - 198,
         `+${this.bones.earned} ossos  (total ${this.bones.total})`,
         'muted',
         THEME.title,
@@ -75,14 +81,14 @@ export class VictoryScene extends Phaser.Scene {
     addText(
       this,
       centerX,
-      centerY - 130,
+      centerY - 150,
       this.isDaily ? 'DESAFIO CONCLUÍDO' : `NOITE ${this.night} SUPERADA`,
       'heading',
     )
     addText(
       this,
       centerX,
-      centerY - 70,
+      centerY - 92,
       this.isDaily
         ? 'Você escapou do labirinto de hoje.'
         : epilogueForNight(this.night).headline,
@@ -91,7 +97,7 @@ export class VictoryScene extends Phaser.Scene {
     addText(
       this,
       centerX,
-      centerY - 38,
+      centerY - 62,
       this.isDaily
         ? 'Amanhã a mata muda. Volte para manter a sequência.'
         : epilogueForNight(this.night).detail,
@@ -101,27 +107,20 @@ export class VictoryScene extends Phaser.Scene {
     addText(
       this,
       centerX,
-      centerY + 5,
+      centerY - 14,
       this.statLines(),
       this.highlightsBest ? 'body' : 'muted',
       this.highlightsBest ? THEME.title : undefined,
     )
 
     if (this.achievements.length > 0) {
-      addText(
-        this,
-        centerX,
-        centerY + 42,
-        `🏆 ${this.achievements.join('  ·  ')}`,
-        'muted',
-        THEME.title,
-      )
+      addAchievements(this, centerX, centerY + 34, this.achievements)
     }
 
     createTextButton({
       scene: this,
       x: centerX,
-      y: centerY + 80,
+      y: centerY + 100,
       label: this.isDaily ? 'MELHORAR O TEMPO' : `NOITE ${this.night + 1}`,
       onClick: () => {
         this.restartGame()
@@ -131,7 +130,7 @@ export class VictoryScene extends Phaser.Scene {
     createTextButton({
       scene: this,
       x: centerX,
-      y: centerY + 140,
+      y: centerY + 160,
       label: 'VOLTAR AO MENU',
       onClick: () => {
         this.returnToMenu()
@@ -142,7 +141,7 @@ export class VictoryScene extends Phaser.Scene {
     this.input.keyboard?.once('keydown-SPACE', () => this.restartGame())
     this.input.keyboard?.once('keydown-ENTER', () => this.restartGame())
     this.setupShare(
-      addText(this, centerX, centerY + 182, 'C: copiar resultado', 'muted'),
+      addText(this, centerX, centerY + 200, 'C: copiar resultado', 'muted'),
       true,
     )
 

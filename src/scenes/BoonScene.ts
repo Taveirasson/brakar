@@ -17,12 +17,12 @@ export class BoonScene extends Phaser.Scene {
     const choices = pickBoonChoices(getBoons())
 
     addBackdrop(this, 1)
-    addPanel(this, centerX, centerY, 700, 400)
-    addText(this, centerX, centerY - 150, `NOITE ${getNight()}`, 'heading')
-    addText(this, centerX, centerY - 105, 'Escolha uma bênção da mata', 'body')
+    addPanel(this, centerX, centerY, 700, 460)
+    addText(this, centerX, centerY - 178, `NOITE ${getNight()}`, 'heading')
+    addText(this, centerX, centerY - 132, 'Escolha uma bênção da mata', 'body')
 
     choices.forEach((boon, index) => {
-      const y = centerY - 40 + index * 90
+      const y = centerY - 62 + index * 98
 
       createTextButton({
         scene: this,
@@ -32,7 +32,7 @@ export class BoonScene extends Phaser.Scene {
         label: boon.name.toUpperCase(),
         onClick: () => this.pick(boon.id),
       })
-      addText(this, centerX, y + 32, boon.description, 'muted', THEME.title)
+      addText(this, centerX, y + 40, boon.description, 'muted', THEME.title)
     })
 
     this.cameras.main.fadeIn(250, 5, 10, 7)

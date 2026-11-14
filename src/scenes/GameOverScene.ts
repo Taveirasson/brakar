@@ -6,7 +6,13 @@ import { SCENE_KEYS } from '../config/sceneKeys'
 import { setGameHudVisible } from '../ui/overlayHud'
 import { createTextButton } from '../ui/createTextButton'
 import { formatTime, type Records } from '../run/records'
-import { addBackdrop, addPanel, addText, THEME } from '../ui/theme'
+import {
+  addAchievements,
+  addBackdrop,
+  addPanel,
+  addText,
+  THEME,
+} from '../ui/theme'
 
 export class GameOverScene extends Phaser.Scene {
   private night = 1
@@ -53,13 +59,13 @@ export class GameOverScene extends Phaser.Scene {
 
     setGameHudVisible(this, false)
     addBackdrop(this, 0.88)
-    addPanel(this, centerX, centerY, 580, 400, 0xc0504f)
+    addPanel(this, centerX, centerY, 580, 440, 0xc0504f)
 
     if (this.bones) {
       addText(
         this,
         centerX + 270,
-        centerY - 178,
+        centerY - 198,
         `+${this.bones.earned} ossos  (total ${this.bones.total})`,
         'muted',
         THEME.title,
@@ -68,7 +74,7 @@ export class GameOverScene extends Phaser.Scene {
     addText(
       this,
       centerX,
-      centerY - 130,
+      centerY - 150,
       'O ESTOURO TE PEGOU',
       'heading',
       THEME.danger,
@@ -76,7 +82,7 @@ export class GameOverScene extends Phaser.Scene {
     addText(
       this,
       centerX,
-      centerY - 70,
+      centerY - 92,
       this.survival
         ? `Você sobreviveu a ${this.survival.nights ?? 0} ${this.survival.nights === 1 ? 'noite' : 'noites'}.`
         : getGameMode() === 'daily'
@@ -86,21 +92,14 @@ export class GameOverScene extends Phaser.Scene {
     )
 
     if (this.achievements.length > 0) {
-      addText(
-        this,
-        centerX,
-        centerY + 22,
-        `🏆 ${this.achievements.join('  ·  ')}`,
-        'muted',
-        THEME.title,
-      )
+      addAchievements(this, centerX, centerY + 34, this.achievements)
     }
 
     const best = this.records?.bestTimeMs
     addText(
       this,
       centerX,
-      centerY - 22,
+      centerY - 30,
       this.survival
         ? [
             this.survival.isNewBest
@@ -121,7 +120,7 @@ export class GameOverScene extends Phaser.Scene {
     createTextButton({
       scene: this,
       x: centerX,
-      y: centerY + 60,
+      y: centerY + 100,
       label: 'TENTAR DE NOVO',
       onClick: () => {
         this.restartGame()
@@ -131,7 +130,7 @@ export class GameOverScene extends Phaser.Scene {
     createTextButton({
       scene: this,
       x: centerX,
-      y: centerY + 125,
+      y: centerY + 160,
       label: 'VOLTAR AO MENU',
       onClick: () => {
         this.returnToMenu()
@@ -145,7 +144,7 @@ export class GameOverScene extends Phaser.Scene {
       addText(
         this,
         centerX,
-        centerY + 178,
+        centerY + 200,
         'R: tentar de novo  ·  C: copiar resultado',
         'muted',
       ),

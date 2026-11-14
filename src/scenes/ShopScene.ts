@@ -24,7 +24,7 @@ import { buyAndEquip, loadWallet, type Wallet } from '../run/wallet'
 import { createTextButton } from '../ui/createTextButton'
 import { addBackdrop, addPanel, addText, FONT_FAMILY, THEME } from '../ui/theme'
 
-const COLUMN_X = { skin: 520, trail: 770 }
+const COLUMN_X = { skin: 500, trail: 750 }
 const FIRST_ROW_Y = 128
 const ROW_GAP = 54
 const BUTTON_WIDTH = 230
@@ -57,7 +57,7 @@ export class ShopScene extends Phaser.Scene {
     addText(this, centerX, 52, 'LOJA DO PIPOCA', 'heading')
 
     this.balance = this.add
-      .text(centerX, 96, '', {
+      .text(centerX, 90, '', {
         fontFamily: FONT_FAMILY,
         fontSize: '20px',
         color: THEME.title,
@@ -80,7 +80,7 @@ export class ShopScene extends Phaser.Scene {
     }
 
     this.message = this.add
-      .text(220, 410, 'Ossos vêm das fugas: cada osso coletado conta.', {
+      .text(215, 410, 'Ossos vêm das fugas: cada osso coletado conta.', {
         fontFamily: FONT_FAMILY,
         fontSize: '15px',
         color: THEME.muted,
@@ -91,8 +91,8 @@ export class ShopScene extends Phaser.Scene {
 
     createTextButton({
       scene: this,
-      x: centerX + 5,
-      y: 492,
+      x: centerX,
+      y: 474,
       label: 'VOLTAR',
       onClick: () => this.scene.start(SCENE_KEYS.menu),
     })
@@ -109,11 +109,11 @@ export class ShopScene extends Phaser.Scene {
     this.makeTrailTextures()
 
     this.add
-      .circle(220, 250, 110, 0x1a2a1f, 0.9)
+      .circle(215, 250, 110, 0x1a2a1f, 0.9)
       .setStrokeStyle(3, 0xe8c766, 0.6)
 
     if (ensureAnimations(this, PIPOCA_TEXTURE, PIPOCA_ANIMATIONS)) {
-      this.preview = this.add.sprite(220, 250, PIPOCA_TEXTURE).setScale(5)
+      this.preview = this.add.sprite(215, 250, PIPOCA_TEXTURE).setScale(5)
       this.preview.play('pipoca-idle')
       this.tweens.add({
         targets: this.preview,
@@ -217,7 +217,7 @@ export class ShopScene extends Phaser.Scene {
     const key = TRAIL_TEXTURE_KEYS[style.texture]
 
     this.trailPreview = this.add.particles(
-      220,
+      215,
       this.preview ? 285 : 270,
       this.textures.exists(key) ? key : FIREFLY_TEXTURE,
       {

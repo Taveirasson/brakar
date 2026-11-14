@@ -107,3 +107,21 @@ export function addPanel(
 
   return graphics
 }
+
+/** Linha de conquistas/missões: quebra em várias linhas em vez de vazar do painel. */
+export function addAchievements(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  entries: string[],
+  wrapWidth = 520,
+): Phaser.GameObjects.Text {
+  return addText(
+    scene,
+    x,
+    y,
+    `🏆 ${entries.join('  ·  ')}`,
+    'muted',
+    THEME.title,
+  ).setWordWrapWidth(wrapWidth)
+}
