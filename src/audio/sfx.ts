@@ -100,6 +100,11 @@ export const sfx = {
   rustle(): void {
     tone(220, 0.15, { type: 'sawtooth', volume: 0.04, slideTo: 120 })
   },
+  /** O Estouro começou a caçar: aviso agudo. */
+  alert(): void {
+    tone(880, 0.12, { type: 'square', volume: 0.1 })
+    tone(660, 0.18, { type: 'square', volume: 0.1, delay: 0.1 })
+  },
   /** Susto da captura. */
   caught(): void {
     tone(180, 0.7, { type: 'sawtooth', volume: 0.2, slideTo: 40 })

@@ -11,5 +11,6 @@ Feito:
 8. Compartilhar resultado: tecla C (ou clique) nas telas de vitória/derrota copia 'BRAKAR 🐕💣 ... Consegue fazer melhor? <link>'. Testado no navegador (clipboard).
 9. Conquistas (src/run/achievements.ts): Primeira fuga, Fantasma, Relâmpago, Mestre das moitas, Roedor de ossos, Coruja; salvas e exibidas nas telas de fim. Testado no navegador.
 10. Dicas de primeira vez: nas 2 primeiras partidas (noite 1) três avisos em sequência explicam Estouro, Shift, moitas, ossos e lama. Testado no navegador.
+11. Aviso do Estouro: '?' amarelo quando ele passa a investigar e '!' vermelho + som agudo quando passa a caçar, seguindo ele por ~1 s. Dá tempo de reagir. Testado no navegador.
 
 Ideias pendentes (por ordem): itens com efeito, conquistas.

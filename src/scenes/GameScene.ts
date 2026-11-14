@@ -39,6 +39,7 @@ import {
   type StaminaState,
 } from '../player/stamina'
 import { hidingSpotOffset, pickHidingCells } from '../maze/HidingSpotPlacement'
+import { FONT_FAMILY } from '../ui/theme'
 import { sfx, toggleMuted } from '../audio/sfx'
 import { getNight } from '../run/runState'
 import { unlockAchievements } from '../run/achievements'
@@ -102,6 +103,7 @@ const HIDING_RADIUS = 26
 const HIDING_MIN_HUNTER_DISTANCE = CELL_PITCH
 const HIDING_SPOTS_PER_CELL_ROW = 0.6
 const BUSH_SCALE = 1.25
+const ALERT_OFFSET_Y = 18
 
 const TIPS_KEY = 'brakar-tips-seen'
 const TIPS_MAX_RUNS = 2
@@ -164,6 +166,7 @@ export class GameScene extends Phaser.Scene {
   private bonesCollected = 0
   private timesHunted = 0
   private lastHunterState = ''
+  private alertMarker?: Phaser.GameObjects.Text
   private stamina: StaminaState = FULL_STAMINA
 
   private exitInformation!: FarthestCellResult
@@ -208,6 +211,7 @@ export class GameScene extends Phaser.Scene {
     this.bonesCollected = 0
     this.timesHunted = 0
     this.lastHunterState = ''
+    this.alertMarker = undefined
     this.night = getNight()
     this.hunterSettings = hunterSettingsForNight(this.night)
 
@@ -1249,6 +1253,20 @@ export class GameScene extends Phaser.Scene {
 
     if (hunter.state === 'hunting' && this.lastHunterState !== 'hunting') {
       this.timesHunted++
+      this.showAlert('!', '#ff5a5a')
+      sfx.alert()
+    } else if (
+      hunter.state === 'investigating' &&
+      this.lastHunterState === 'wandering'
+    ) {
+      this.showAlert('?', '#ffd75a')
+    }
+
+    if (this.alertMarker?.active) {
+      this.alertMarker.setPosition(
+        hunter.position.x,
+        hunter.position.y - ALERT_OFFSET_Y,
+      )
     }
 
     this.lastHunterState = hunter.state
@@ -1297,6 +1315,40 @@ export class GameScene extends Phaser.Scene {
         records,
         achievements,
       })
+    })
+  }
+
+  /** "!" quando o Estouro começa a caçar, "?" quando ele ouve algo: dá tempo de reagir. */
+  private showAlert(symbol: string, color: string): void {
+    this.alertMarker?.destroy()
+
+    const marker = this.add
+      .text(0, 0, symbol, {
+        fontFamily: FONT_FAMILY,
+        fontSize: '22px',
+        color,
+        stroke: '#050a07',
+        strokeThickness: 4,
+      })
+      .setOrigin(0.5)
+      .setDepth(20)
+      .setScale(0.6)
+
+    this.minimapCamera.ignore(marker)
+    this.alertMarker = marker
+
+    this.tweens.add({
+      targets: marker,
+      scale: { from: 0.6, to: 1.1 },
+      duration: 160,
+      yoyo: true,
+    })
+    this.tweens.add({
+      targets: marker,
+      alpha: 0,
+      delay: 700,
+      duration: 300,
+      onComplete: () => marker.destroy(),
     })
   }
 
