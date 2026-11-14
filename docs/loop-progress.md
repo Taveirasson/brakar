@@ -50,3 +50,29 @@ Ordem planejada (marque ao concluir):
 8. [x] Coruja (src/run/owl.ts, GameScene): a partir da noite 2 (não no desafio do dia) pousa num corredor; se o Pipoca passa a < 110 px sem estar escondido, pia (som + aviso), o Estouro que vaga vai investigar o local (HunterBrain.hearNoise) e ela voa e pousa em outro lugar após 14 s. Testado no navegador. Estouro duplo/filhote ficou de fora (exige vários caçadores).
 9. [x] Histórico (src/run/history.ts, HistoryScene): top 5 fugas do modo normal (tempo, noite, data), últimos 8 dias do desafio e recorde de sobrevivência; abre ao clicar em "▸ Ver histórico" no canto do menu. Testado no navegador.
 
+
+## FASE 3 — Abertura (primeiro minuto) — planejamento, nada implementado ainda
+
+Problema: a partida começa com a fase "litExploration": o jogador atravessa o labirinto inteiro, sem Estouro, sem vagalumes e sem recompensa, até o farol da célula mais distante (`findFarthestCell`), só para abrir o painel "O CARRO JÁ SE FOI" (LockedExitScene). Depois o jogo de verdade começa e a saída é reaproveitada no fim. Resultado: 30-90 s de caminhada sem decisão antes da 1ª ação.
+
+O que a pesquisa indica (blogs de design, anedótico, sem estudo formal; fontes no fim):
+- O 1º minuto decide: a maior parte do abandono acontece na 1ª run; abertura sem interação derruba retenção.
+- Ensine pouco no começo (movimento + objetivo), o resto aparece depois.
+- Laços curtos e recompensas em várias escalas: micro (segundos), da noite (minutos), do dia (missões/sequência). Já temos as duas últimas; falta a micro no começo.
+- Deixe interromper e reiniciar sem custo (celular): recomeçar tem de ser instantâneo.
+- Recompensa variável com moderação: escolhas por run (roguelike) dão vontade de "mais uma".
+
+Ideia central: o carro vai embora do PONTO DE PARTIDA (o Pipoca cai/fica para trás) e a noite começa já. A saída (estrada) continua na célula mais distante e só acende com os vagalumes, como já é hoje.
+
+Ordem planejada (marque ao concluir; cada item testado no navegador e commitado):
+1. [ ] Abertura instantânea: remover a caminhada iluminada. Cena curta (~3-4 s, qualquer tecla/toque pula): carro sai do ponto inicial com os faróis, luzes apagam, o objetivo aparece num banner no HUD ("Junte 3 vagalumes"). No lugar do painel modal LockedExitScene. Tempo até a 1ª ação < 5 s. Cuidar: modo diário (semente), sobrevivência, tutorial e `handlePlayerFoundExit`.
+2. [ ] Primeira recompensa em ~10 s: o 1º vagalume sempre nasce perto do início (2-3 células, usando o `random` da partida para o diário continuar igual para todos) e um osso no caminho. Poeira de brilho/rastro leve apontando para ele.
+3. [ ] Período de graça do Estouro: ele só aparece depois de ~8 s (noite 1: ~12 s), com aviso sonoro e '?' distante antes de começar a vagar. Dá tempo de aprender sem punição e cria tensão.
+4. [ ] Bússola de vagalume: seta discreta na borda da tela apontando para o vagalume mais próximo ainda não pego, some depois que o jogador já fez 2 fugas ou ao usar o Mapa da mata. Menos vagueio sem rumo.
+5. [ ] Micro-recompensas: popups "+1", sequência de coletas rápidas (combo de vagalumes em <8 s dá bônus de ossos), som/brilho crescente, barra de progresso do objetivo no HUD.
+6. [ ] Reinício instantâneo: tentar de novo pula qualquer cena/painel e entra direto no escuro (sem abertura do carro); mostrar "Noite N" em ~1 s. Botão de pausa/retomar sem custo no celular.
+7. [ ] Escolha de bênção a cada noite (roguelike): antes da noite 2+, escolher 1 de 3 efeitos pequenos (ex.: +fôlego, Estouro lento nos primeiros 20 s, vagalumes brilham mais, 1 escudo inicial). Dá motivo para "mais uma noite".
+8. [ ] Ajustar o tutorial à nova abertura (movimento + objetivo primeiro; correr/moita só depois do 1º vagalume) e encurtar dicas.
+9. [ ] Medir o gancho localmente (sem rede): tempo até o 1º vagalume e fugas na 1ª partida, mostrados no HISTÓRICO, para comparar antes/depois.
+
+Fontes da pesquisa: wayline.io (tutorial UX, retenção em roguelikes), game-wisdom.com (onboarding, 'frictionless hook'), finalboss.io (hook rate), gdevelop.io/blog/casual-game-loops, gameanalytics.com (appointment mechanics), gamedesignbites (retenção em baixa atenção). Todas são blogs de praticantes; números específicos citados lá não foram verificados.
