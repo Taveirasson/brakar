@@ -96,6 +96,11 @@ export class Hunter {
     this.brain.loseTrack()
   }
 
+  /** Ouviu um barulho em uma célula e vai conferir. */
+  hearNoise(cell: CellPosition): void {
+    this.brain.hearNoise(cell)
+  }
+
   /** O objeto de cena, para que outras câmeras (como o minimapa) possam ignorá-lo. */
   get gameObject(): Phaser.GameObjects.Sprite {
     return this.sprite

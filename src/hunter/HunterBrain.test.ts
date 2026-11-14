@@ -154,3 +154,22 @@ describe('HunterBrain', () => {
     expect(brain.state).toBe('investigating')
   })
 })
+
+describe('HunterBrain.hearNoise', () => {
+  it('vagando passa a investigar o local do barulho', () => {
+    const brain = new HunterBrain(SERPENTINE_MAZE)
+
+    brain.hearNoise(FAR_CORNER)
+
+    expect(brain.state).toBe('investigating')
+  })
+
+  it('caçando ignora o barulho', () => {
+    const brain = new HunterBrain(SERPENTINE_MAZE)
+
+    reachHunting(brain)
+    brain.hearNoise(ORIGIN)
+
+    expect(brain.state).toBe('hunting')
+  })
+})

@@ -96,6 +96,11 @@ export const sfx = {
       tone(f, 0.25, { type: 'triangle', volume: 0.13, delay: i * 0.1 }),
     )
   },
+  /** Coruja: dois pios graves. */
+  hoot(): void {
+    tone(330, 0.28, { type: 'sine', volume: 0.12, slideTo: 260 })
+    tone(300, 0.4, { type: 'sine', volume: 0.12, slideTo: 220, delay: 0.35 })
+  },
   /** Moita: farfalhar curto. */
   rustle(): void {
     tone(220, 0.15, { type: 'sawtooth', volume: 0.04, slideTo: 120 })

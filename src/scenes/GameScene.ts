@@ -57,6 +57,7 @@ import {
 } from '../run/runState'
 import { unlockAchievements } from '../run/achievements'
 import { recordMissions } from '../run/missions'
+import { OWL_COOLDOWN_MS, owlActive, owlShouldHoot } from '../run/owl'
 import {
   Tutorial,
   isTutorialDone,
@@ -227,6 +228,8 @@ export class GameScene extends Phaser.Scene {
   private timesHunted = 0
   private powerUpsCollected = 0
   private tutorial?: Tutorial
+  private owl?: Phaser.GameObjects.Image
+  private owlCooldownMs = 0
   private lastHunterState = ''
   private alertMarker?: Phaser.GameObjects.Text
   private stamina: StaminaState = FULL_STAMINA
@@ -304,6 +307,8 @@ export class GameScene extends Phaser.Scene {
     this.timesHunted = 0
     this.powerUpsCollected = 0
     this.tutorial = undefined
+    this.owl = undefined
+    this.owlCooldownMs = 0
     this.lastHunterState = ''
     this.alertMarker = undefined
     this.night = this.mode === 'daily' ? 1 : getNight()
@@ -364,6 +369,7 @@ export class GameScene extends Phaser.Scene {
     this.updatePlayerAnimation(delta)
     this.updateHiding()
     this.updateHunter(delta)
+    this.updateOwl(delta)
     this.effects?.update(this.hunter?.state === 'hunting')
 
     if (this.visibilityMaskCreated) {
@@ -1173,6 +1179,7 @@ export class GameScene extends Phaser.Scene {
     const boneCells = this.spawnBones([...itemCells, ...bushCells])
     this.spawnPowerUps([...itemCells, ...bushCells, ...boneCells])
     this.spawnHunter()
+    this.spawnOwl()
     this.announceModifiers()
     this.startTutorial()
     this.showTips()
@@ -1586,6 +1593,105 @@ export class GameScene extends Phaser.Scene {
 
     this.hidden = canHide
     this.player.setAlpha(canHide ? 0.4 : 1)
+  }
+
+  /** Coruja a partir da noite 2: pia se o Pipoca passa perto e o Estouro vai conferir. */
+  private spawnOwl(): void {
+    if (!owlActive(this.night, this.mode)) {
+      return
+    }
+
+    if (!this.textures.exists('owl')) {
+      const g = this.make.graphics({ x: 0, y: 0 })
+
+      g.fillStyle(0x6b4a2b, 1)
+      g.fillEllipse(11, 13, 16, 18)
+      g.fillStyle(0x8c6a42, 1)
+      g.fillTriangle(4, 6, 8, 2, 9, 8)
+      g.fillTriangle(18, 6, 14, 2, 13, 8)
+      g.fillStyle(0xffd36a, 1)
+      g.fillCircle(8, 10, 3)
+      g.fillCircle(14, 10, 3)
+      g.fillStyle(0x1a1208, 1)
+      g.fillCircle(8, 10, 1.2)
+      g.fillCircle(14, 10, 1.2)
+      g.generateTexture('owl', 22, 24)
+      g.destroy()
+    }
+
+    this.owl = this.add.image(0, 0, 'owl').setDepth(12)
+    this.minimapCamera.ignore(this.owl)
+    this.perchOwl()
+    this.showNotification(
+      'UMA CORUJA VIGIA A MATA: ELA DENUNCIA QUEM PASSA PERTO',
+      '#d9b27a',
+      2600,
+    )
+  }
+
+  /** Pousa a coruja numa célula do labirinto longe do início e da saída. */
+  private perchOwl(): void {
+    const owl = this.owl
+
+    if (!owl) {
+      return
+    }
+
+    const [cell] = pickHidingCells(
+      this.maze,
+      [{ row: 0, column: 0 }, this.exitInformation.cell],
+      1,
+      Math.random,
+    )
+
+    if (!cell) {
+      return
+    }
+
+    const position = this.getCellCenter(cell.row, cell.column)
+
+    owl.setPosition(position.x, position.y).setAlpha(0)
+    this.tweens.add({ targets: owl, alpha: 1, duration: 600 })
+  }
+
+  private updateOwl(delta: number): void {
+    const owl = this.owl
+
+    if (!owl || !owl.active || this.hunter === undefined) {
+      return
+    }
+
+    this.owlCooldownMs -= delta
+
+    const distance = Phaser.Math.Distance.Between(
+      owl.x,
+      owl.y,
+      this.player.x,
+      this.player.y,
+    )
+
+    if (
+      owl.alpha < 1 ||
+      !owlShouldHoot({
+        distance,
+        hidden: this.hidden,
+        cooldownMs: this.owlCooldownMs,
+      })
+    ) {
+      return
+    }
+
+    this.owlCooldownMs = OWL_COOLDOWN_MS
+    sfx.hoot()
+    this.showNotification('UH-UH! A CORUJA TE DENUNCIOU', '#d9b27a', 1600)
+    this.hunter.hearNoise(this.getPlayerCell())
+    this.tweens.add({
+      targets: owl,
+      y: owl.y - 40,
+      alpha: 0,
+      duration: 500,
+      onComplete: () => this.time.delayedCall(2500, () => this.perchOwl()),
+    })
   }
 
   private spawnHunter(): void {

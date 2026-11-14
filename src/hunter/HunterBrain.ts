@@ -129,6 +129,14 @@ export class HunterBrain {
     return options[index]
   }
 
+  /** Barulho distante (coruja): quem vaga vai investigar o local; quem já caça ou investiga segue como está. */
+  hearNoise(cell: CellPosition): void {
+    if (this.currentState === 'wandering') {
+      this.enterState('investigating')
+      this.target = cell
+    }
+  }
+
   /** Jogador sumiu de vista (escondido): a caçada vira investigação na hora. */
   loseTrack(): void {
     if (this.currentState === 'hunting') {
