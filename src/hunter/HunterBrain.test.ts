@@ -144,4 +144,13 @@ describe('HunterBrain', () => {
     brain.nextCell({ row: 0, column: 1 })
     expect(cell(brain.nextCell(ORIGIN))).toEqual({ row: 0, column: 1 })
   })
+
+  it('loseTrack tira da caçada na hora e mantém o alvo', () => {
+    const brain = new HunterBrain(SERPENTINE_MAZE, () => 0)
+
+    reachHunting(brain)
+    brain.loseTrack()
+
+    expect(brain.state).toBe('investigating')
+  })
 })

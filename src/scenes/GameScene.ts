@@ -38,6 +38,7 @@ import {
   stepStamina,
   type StaminaState,
 } from '../player/stamina'
+import { hidingSpotOffset, pickHidingCells } from '../maze/HidingSpotPlacement'
 import { getNight } from '../run/runState'
 import { recordCaught, recordEscape } from '../run/records'
 import { NIGHT_LIGHTING } from '../vision/moonlight'
@@ -91,6 +92,11 @@ const FIREFLY_LIGHT_INTENSITY = 1.2
 const CATCH_DISTANCE = (PLAYER_SIZE + HUNTER_SIZE) / 2
 const CATCH_EFFECT_MS = 400
 const DANGER_RADIUS_CELLS = 5
+// Moitas: dentro deste raio (px) do centro o Pipoca some, se não estiver correndo
+// e o Estouro não estiver colado nele.
+const HIDING_RADIUS = 14
+const HIDING_MIN_HUNTER_DISTANCE = CELL_PITCH
+const HIDING_SPOTS_PER_CELL_ROW = 0.6
 
 const MINIMAP_CELL_SIZE = 8
 const MINIMAP_PADDING = 12
@@ -133,6 +139,9 @@ export class GameScene extends Phaser.Scene {
   private cursorKeys!: Phaser.Types.Input.Keyboard.CursorKeys
   private wasdKeys!: MovementKeys
   private sprintKey!: Phaser.Input.Keyboard.Key
+  private sprinting = false
+  private hidingSpots: Phaser.GameObjects.Image[] = []
+  private hidden = false
   private stamina: StaminaState = FULL_STAMINA
 
   private exitInformation!: FarthestCellResult
@@ -169,6 +178,9 @@ export class GameScene extends Phaser.Scene {
     this.playerFoundExit = false
     this.elapsedMs = 0
     this.stamina = FULL_STAMINA
+    this.sprinting = false
+    this.hidingSpots = []
+    this.hidden = false
     this.night = getNight()
     this.hunterSettings = hunterSettingsForNight(this.night)
 
@@ -210,6 +222,7 @@ export class GameScene extends Phaser.Scene {
 
     this.updatePlayerMovement(delta)
     this.updatePlayerAnimation(delta)
+    this.updateHiding()
     this.updateHunter(delta)
     this.effects?.update(this.hunter?.state === 'hunting')
 
@@ -750,6 +763,7 @@ export class GameScene extends Phaser.Scene {
     )
 
     this.stamina = step.state
+    this.sprinting = step.sprinting
 
     const topSpeed = PLAYER_SPEED * (step.sprinting ? SPRINT_MULTIPLIER : 1)
     const speed = isMovingDiagonally ? topSpeed / Math.SQRT2 : topSpeed
@@ -912,8 +926,88 @@ export class GameScene extends Phaser.Scene {
 
     this.turnOffWorldLights()
     this.resetMinimap()
-    this.spawnRequiredItems()
+    const itemCells = this.spawnRequiredItems()
+    this.spawnHidingSpots(itemCells)
     this.spawnHunter()
+  }
+
+  /** Moitas nos corredores: o Pipoca some dentro delas e o Estouro perde o rastro. */
+  private spawnHidingSpots(itemCells: MazeCell[]): void {
+    const playerCell = this.getPlayerCell()
+    const cells = pickHidingCells(
+      this.maze,
+      [
+        { row: 0, column: 0 },
+        this.exitInformation.cell,
+        playerCell,
+        ...itemCells,
+      ],
+      Math.max(3, Math.round(this.mazeSize * HIDING_SPOTS_PER_CELL_ROW)),
+    )
+
+    for (const cell of cells) {
+      const center = this.getCellCenter(cell.row, cell.column)
+      const offset = hidingSpotOffset(cell)
+
+      const bush = this.add
+        .image(
+          center.x + offset.x,
+          center.y + offset.y,
+          FOREST_TEXTURE,
+          tileFrameFor('tree', cell.row + 5, cell.column + 9, false, 15),
+        )
+        .setDepth(11)
+        .setTint(0xb4d890)
+        .setLighting(true)
+
+      this.minimapCamera.ignore(bush)
+      this.hidingSpots.push(bush)
+    }
+  }
+
+  private updateHiding(): void {
+    if (this.hidingSpots.length === 0 || this.gamePhase === 'defeat') {
+      return
+    }
+
+    const inBush = this.hidingSpots.find(
+      (bush) =>
+        Phaser.Math.Distance.Between(
+          bush.x,
+          bush.y,
+          this.player.x,
+          this.player.y,
+        ) <= HIDING_RADIUS,
+    )
+
+    const hunterDistance = this.hunter
+      ? Phaser.Math.Distance.Between(
+          this.hunter.position.x,
+          this.hunter.position.y,
+          this.player.x,
+          this.player.y,
+        )
+      : Infinity
+
+    const canHide =
+      !!inBush &&
+      !this.sprinting &&
+      (this.hidden || hunterDistance >= HIDING_MIN_HUNTER_DISTANCE)
+
+    if (canHide && !this.hidden) {
+      this.hunter?.loseTrack()
+      this.tweens.add({
+        targets: inBush,
+        angle: { from: -6, to: 6 },
+        duration: 70,
+        yoyo: true,
+        repeat: 2,
+        onComplete: () => inBush.setAngle(0),
+      })
+    }
+
+    this.hidden = canHide
+    this.player.setAlpha(canHide ? 0.4 : 1)
   }
 
   private spawnHunter(): void {
@@ -953,6 +1047,7 @@ export class GameScene extends Phaser.Scene {
       lightRadius: this.hunterSettings.lightPerceptionRadiusCells * CELL_PITCH,
       darkRadius: DARK_PERCEPTION_CELLS * CELL_PITCH,
       walls: this.wallSegments,
+      hidden: this.hidden,
     })
 
     hunter.update(
@@ -1031,7 +1126,7 @@ export class GameScene extends Phaser.Scene {
     this.drawMinimap(currentCell)
   }
 
-  private spawnRequiredItems(): void {
+  private spawnRequiredItems(): MazeCell[] {
     createFireflyTexture(this)
 
     const itemCells: MazeCell[] = findItemCellsByQuadrant(
@@ -1075,6 +1170,8 @@ export class GameScene extends Phaser.Scene {
         this.collectItem(item, glow)
       })
     }
+
+    return itemCells
   }
 
   private collectItem(
@@ -1170,6 +1267,7 @@ export class GameScene extends Phaser.Scene {
 
     hud.setTime(this.elapsedMs)
     hud.setNight(this.night)
+    hud.setHidden(this.hidden)
     hud.setStamina(this.stamina.value, this.stamina.exhausted)
     hud.setFireflies(this.collectedItems, searching ? this.requiredItems : null)
     hud.setDanger(this.dangerLevel())

@@ -70,6 +70,20 @@ describe('canPerceivePlayer', () => {
   })
 })
 
+describe('escondido', () => {
+  it('não é percebido nem perto com linha de visão', () => {
+    expect(
+      canPerceivePlayer({ ...base, player: { x: 64, y: 0 }, hidden: true }),
+    ).toBe(false)
+  })
+
+  it('é percebido se o Estouro encosta', () => {
+    expect(
+      canPerceivePlayer({ ...base, player: { x: 10, y: 0 }, hidden: true }),
+    ).toBe(true)
+  })
+})
+
 describe('isCaught', () => {
   it('captura abaixo da distância', () => {
     expect(isCaught({ x: 0, y: 0 }, { x: 16, y: 0 }, 17)).toBe(true)

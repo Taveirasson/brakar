@@ -129,6 +129,13 @@ export class HunterBrain {
     return options[index]
   }
 
+  /** Jogador sumiu de vista (escondido): a caçada vira investigação na hora. */
+  loseTrack(): void {
+    if (this.currentState === 'hunting') {
+      this.enterState('investigating')
+    }
+  }
+
   private enterState(state: HunterState): void {
     this.currentState = state
     this.timeInState = 0

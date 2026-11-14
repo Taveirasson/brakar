@@ -14,6 +14,7 @@ export class HudScene extends Phaser.Scene {
   private staminaBar!: Phaser.GameObjects.Graphics
   private staminaValue = 1
   private staminaExhausted = false
+  private hiddenLabel!: Phaser.GameObjects.Text
   private danger = 0
 
   constructor() {
@@ -45,12 +46,19 @@ export class HudScene extends Phaser.Scene {
       color: THEME.muted,
     })
     this.staminaBar = this.add.graphics()
-    this.add.text(16, 86, 'SHIFT: correr', {
+    this.add.text(16, 86, 'SHIFT: correr  ·  moitas escondem', {
       ...style,
       fontSize: '13px',
       strokeThickness: 3,
       color: THEME.muted,
     })
+    this.hiddenLabel = this.add
+      .text(this.scale.width / 2, this.scale.height - 40, 'ESCONDIDO', {
+        ...style,
+        color: '#9fe870',
+      })
+      .setOrigin(0.5)
+      .setAlpha(0)
     this.fireflies = this.add.text(16, 38, '', {
       ...style,
       color: THEME.title,
@@ -89,6 +97,10 @@ export class HudScene extends Phaser.Scene {
     bar.fillRoundedRect(16, 106, width + 4, 10, 4)
     bar.fillStyle(color, 1)
     bar.fillRoundedRect(18, 108, Math.max(0, width * this.staminaValue), 6, 3)
+  }
+
+  setHidden(hidden: boolean): void {
+    this.hiddenLabel?.setAlpha(hidden ? 1 : 0)
   }
 
   setNight(night: number): void {

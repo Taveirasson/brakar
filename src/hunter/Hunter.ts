@@ -87,6 +87,11 @@ export class Hunter {
     return this.brain.state
   }
 
+  /** Perdeu o jogador de vista (ele se escondeu). */
+  loseTrack(): void {
+    this.brain.loseTrack()
+  }
+
   /** O objeto de cena, para que outras câmeras (como o minimapa) possam ignorá-lo. */
   get gameObject(): Phaser.GameObjects.Sprite {
     return this.sprite
