@@ -103,6 +103,9 @@ const HIDING_MIN_HUNTER_DISTANCE = CELL_PITCH
 const HIDING_SPOTS_PER_CELL_ROW = 0.6
 const BUSH_SCALE = 1.25
 
+const TIPS_KEY = 'brakar-tips-seen'
+const TIPS_MAX_RUNS = 2
+
 // Lama: poças que freiam o Pipoca (um pouco) e o Estouro (muito).
 const MUD_CELLS_PER_CELL_ROW = 0.7
 const MUD_HALF_SIZE = CELL_PITCH / 3
@@ -968,6 +971,35 @@ export class GameScene extends Phaser.Scene {
     const bushCells = this.spawnHidingSpots(itemCells)
     this.spawnBones([...itemCells, ...bushCells])
     this.spawnHunter()
+    this.showTips()
+  }
+
+  /** Dicas nas duas primeiras partidas; depois o jogador já sabe jogar. */
+  private showTips(): void {
+    if (this.night !== 1) {
+      return
+    }
+
+    let seen = 0
+
+    try {
+      seen = Number(localStorage.getItem(TIPS_KEY)) || 0
+      localStorage.setItem(TIPS_KEY, String(seen + 1))
+    } catch {
+      // sem armazenamento: mostra sempre
+    }
+
+    if (seen >= TIPS_MAX_RUNS) {
+      return
+    }
+
+    this.showNotification('O ESTOURO ESTÁ SOLTO! FUJA DELE', '#ff9b9b', 2400)
+    this.showNotification('SHIFT CORRE, MAS O FÔLEGO ACABA', '#9fe870', 2400)
+    this.showNotification(
+      'MOITAS ESCONDEM · OSSOS DÃO FÔLEGO · LAMA FREIA',
+      '#f2ead3',
+      2800,
+    )
   }
 
   /** Moitas nos corredores: o Pipoca some dentro delas e o Estouro perde o rastro. */
