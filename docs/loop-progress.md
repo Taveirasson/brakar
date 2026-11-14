@@ -26,6 +26,7 @@ Feito:
 22. Pipoca expressivo: treme de medo (rotação aleatória até 5°) quando o Estouro está perto (perigo > 0,55) e dá um pulinho (escala 1,22) ao coletar vagalume/osso. Testado no navegador (ângulo, escala e retorno ao normal).
 23. Raios de lua: 9 feixes inclinados azulados (aditivos) que respiram e deslizam pela mata (GameEffects). Testado no navegador (sutil de propósito).
 24. Dificuldade (Fácil/Normal/Difícil) em Configurações (src/config/difficulty.ts): fácil 0,85x velocidade e 0,75x visão do Estouro; difícil 1,12x e 1,2x; teto de 97% da velocidade do Pipoca. Salva em localStorage. Testado no navegador.
+25. Controles de toque (celular/tablet): joystick virtual à esquerda e botão CORRER à direita, só em dispositivos com toque (HudScene + src/input/touchInput.ts). Testado com contexto de toque no navegador (movimento e parada).
 
 NOVO FOCO pedido pelo usuário: (a) paredes/labirinto com mais saídas, (b) visual: efeitos e sprites melhores, (c) história no começo (cutscene). Próximas: efeitos de partículas/sprites melhores (sprites do Pipoca/Estouro, sombras sob os personagens, partículas de coleta, reforçar visual da saída/estrada).
 

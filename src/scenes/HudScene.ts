@@ -2,9 +2,17 @@ import Phaser from 'phaser'
 import { SCENE_KEYS } from '../config/sceneKeys'
 import { formatTime } from '../run/records'
 import { sfx } from '../audio/sfx'
+import {
+  joystickDirection,
+  resetTouchInput,
+  touchInput,
+} from '../input/touchInput'
 import { FONT_FAMILY, THEME } from '../ui/theme'
 
 const VIGNETTE_TEXTURE = 'danger-vignette'
+
+const JOYSTICK = { x: 120, y: 420, radius: 62, knob: 26 }
+const SPRINT_BUTTON = { x: 840, y: 430, radius: 46 }
 
 /** Camada fixa por cima do jogo: cronômetro, vagalumes e vinheta de perigo. */
 export class HudScene extends Phaser.Scene {
@@ -18,6 +26,7 @@ export class HudScene extends Phaser.Scene {
   private hiddenLabel!: Phaser.GameObjects.Text
   private danger = 0
   private nextBeatAt = 0
+  private touchEnabled = false
 
   constructor() {
     super(SCENE_KEYS.hud)
@@ -26,6 +35,8 @@ export class HudScene extends Phaser.Scene {
   create(): void {
     this.danger = 0
     this.nextBeatAt = 0
+    resetTouchInput()
+    this.touchEnabled = false
     this.createVignetteTexture()
 
     this.vignette = this.add
@@ -55,6 +66,10 @@ export class HudScene extends Phaser.Scene {
       strokeThickness: 3,
       color: THEME.muted,
     })
+    if (this.sys.game.device.input.touch) {
+      this.enableTouchControls()
+    }
+
     this.hiddenLabel = this.add
       .text(this.scale.width / 2, this.scale.height - 40, 'ESCONDIDO', {
         ...style,
@@ -153,5 +168,103 @@ export class HudScene extends Phaser.Scene {
     context.fillStyle = gradient
     context.fillRect(0, 0, width, height)
     texture.refresh()
+  }
+
+  /** Mostra o joystick e o botão de correr em telas de toque. */
+  enableTouchControls(): void {
+    if (this.touchEnabled) {
+      return
+    }
+
+    this.touchEnabled = true
+    this.input.addPointer(2)
+
+    const base = this.add
+      .circle(JOYSTICK.x, JOYSTICK.y, JOYSTICK.radius, 0x050a07, 0.35)
+      .setStrokeStyle(2, 0xe8c766, 0.5)
+    const knob = this.add
+      .circle(JOYSTICK.x, JOYSTICK.y, JOYSTICK.knob, 0xe8c766, 0.55)
+      .setStrokeStyle(2, 0xffffff, 0.4)
+
+    const joystickZone = this.add
+      .zone(JOYSTICK.x, JOYSTICK.y, JOYSTICK.radius * 3, JOYSTICK.radius * 3)
+      .setInteractive()
+    let joystickPointer = -1
+
+    const moveKnob = (pointer: Phaser.Input.Pointer) => {
+      let dx = pointer.x - JOYSTICK.x
+      let dy = pointer.y - JOYSTICK.y
+      const length = Math.hypot(dx, dy)
+
+      if (length > JOYSTICK.radius) {
+        dx = (dx / length) * JOYSTICK.radius
+        dy = (dy / length) * JOYSTICK.radius
+      }
+
+      knob.setPosition(JOYSTICK.x + dx, JOYSTICK.y + dy)
+
+      const direction = joystickDirection(dx, dy, JOYSTICK.radius)
+
+      touchInput.h = direction.h
+      touchInput.v = direction.v
+    }
+
+    const releaseKnob = () => {
+      joystickPointer = -1
+      knob.setPosition(JOYSTICK.x, JOYSTICK.y)
+      touchInput.h = 0
+      touchInput.v = 0
+    }
+
+    joystickZone.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      joystickPointer = pointer.id
+      moveKnob(pointer)
+    })
+    this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+      if (pointer.id === joystickPointer && pointer.isDown) {
+        moveKnob(pointer)
+      }
+    })
+    this.input.on('pointerup', (pointer: Phaser.Input.Pointer) => {
+      if (pointer.id === joystickPointer) {
+        releaseKnob()
+      }
+    })
+
+    const sprint = this.add
+      .circle(
+        SPRINT_BUTTON.x,
+        SPRINT_BUTTON.y,
+        SPRINT_BUTTON.radius,
+        0x9fe870,
+        0.3,
+      )
+      .setStrokeStyle(2, 0x9fe870, 0.7)
+      .setInteractive()
+
+    this.add
+      .text(SPRINT_BUTTON.x, SPRINT_BUTTON.y, 'CORRER', {
+        fontFamily: FONT_FAMILY,
+        fontSize: '16px',
+        color: THEME.text,
+        stroke: '#050a07',
+        strokeThickness: 3,
+      })
+      .setOrigin(0.5)
+
+    sprint.on('pointerdown', () => {
+      touchInput.sprint = true
+      sprint.setFillStyle(0x9fe870, 0.6)
+    })
+
+    for (const event of ['pointerup', 'pointerout']) {
+      sprint.on(event, () => {
+        touchInput.sprint = false
+        sprint.setFillStyle(0x9fe870, 0.3)
+      })
+    }
+
+    base.setDepth(50)
+    knob.setDepth(51)
   }
 }

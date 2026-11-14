@@ -42,6 +42,7 @@ import {
 } from '../player/stamina'
 import { hidingSpotOffset, pickHidingCells } from '../maze/HidingSpotPlacement'
 import { FONT_FAMILY } from '../ui/theme'
+import { touchInput } from '../input/touchInput'
 import { sfx, toggleMuted } from '../audio/sfx'
 import { getNight } from '../run/runState'
 import { unlockAchievements } from '../run/achievements'
@@ -818,14 +819,23 @@ export class GameScene extends Phaser.Scene {
       return
     }
 
-    const movingLeft = this.cursorKeys.left.isDown || this.wasdKeys.left.isDown
+    const movingLeft =
+      this.cursorKeys.left.isDown ||
+      this.wasdKeys.left.isDown ||
+      touchInput.h < 0
 
     const movingRight =
-      this.cursorKeys.right.isDown || this.wasdKeys.right.isDown
+      this.cursorKeys.right.isDown ||
+      this.wasdKeys.right.isDown ||
+      touchInput.h > 0
 
-    const movingUp = this.cursorKeys.up.isDown || this.wasdKeys.up.isDown
+    const movingUp =
+      this.cursorKeys.up.isDown || this.wasdKeys.up.isDown || touchInput.v < 0
 
-    const movingDown = this.cursorKeys.down.isDown || this.wasdKeys.down.isDown
+    const movingDown =
+      this.cursorKeys.down.isDown ||
+      this.wasdKeys.down.isDown ||
+      touchInput.v > 0
 
     const horizontalDirection = Number(movingRight) - Number(movingLeft)
 
@@ -838,7 +848,7 @@ export class GameScene extends Phaser.Scene {
     const step = stepStamina(
       this.stamina,
       delta,
-      this.sprintKey.isDown,
+      this.sprintKey.isDown || touchInput.sprint,
       horizontalDirection !== 0 || verticalDirection !== 0,
     )
 
