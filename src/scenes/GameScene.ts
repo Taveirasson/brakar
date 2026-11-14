@@ -98,7 +98,7 @@ const FIREFLY_LIGHT_RADIUS = 48
 const FIREFLY_LIGHT_INTENSITY = 1.2
 
 const CATCH_DISTANCE = (PLAYER_SIZE + HUNTER_SIZE) / 2
-const CATCH_EFFECT_MS = 400
+const CATCH_EFFECT_MS = 1000
 const DANGER_RADIUS_CELLS = 5
 // Moitas: dentro deste raio (px) do centro o Pipoca some, se não estiver correndo
 // e o Estouro não estiver colado nele.
@@ -1339,8 +1339,9 @@ export class GameScene extends Phaser.Scene {
     this.player.setVelocity(0, 0)
 
     this.physics.pause()
-    this.cameras.main.shake(CATCH_EFFECT_MS, 0.01)
-    this.cameras.main.flash(CATCH_EFFECT_MS, 180, 20, 30)
+    this.explodeAt(this.player.x, this.player.y)
+    this.cameras.main.shake(CATCH_EFFECT_MS * 0.6, 0.014)
+    this.cameras.main.flash(CATCH_EFFECT_MS * 0.5, 255, 200, 140)
 
     this.time.delayedCall(CATCH_EFFECT_MS, () => {
       this.clearNotifications()
@@ -1385,6 +1386,64 @@ export class GameScene extends Phaser.Scene {
       delay: 700,
       duration: 300,
       onComplete: () => marker.destroy(),
+    })
+  }
+
+  /** O Estouro explode: bola de fogo, faíscas, onda de choque e o Pipoca some. */
+  private explodeAt(x: number, y: number): void {
+    this.hunter?.gameObject.setVisible(false)
+    this.tweens.add({
+      targets: this.player,
+      alpha: 0,
+      scale: 1.4,
+      duration: 250,
+    })
+
+    const sparks = this.add.particles(x, y, FIREFLY_TEXTURE, {
+      speed: { min: 60, max: 260 },
+      scale: { start: 2, end: 0 },
+      alpha: { start: 1, end: 0 },
+      lifespan: { min: 500, max: 900 },
+      tint: [0xfff2b0, 0xffb43c, 0xff5a2a, 0xc0201c],
+      blendMode: 'ADD',
+      emitting: false,
+    })
+
+    sparks.setDepth(30)
+    this.minimapCamera.ignore(sparks)
+    sparks.explode(60)
+    this.time.delayedCall(1000, () => sparks.destroy())
+
+    const fireball = this.add
+      .image(x, y, GLOW_TEXTURE)
+      .setDepth(29)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setTint(0xff7a2a)
+      .setScale(0.3)
+
+    this.minimapCamera.ignore(fireball)
+    this.tweens.add({
+      targets: fireball,
+      scale: 4.5,
+      alpha: 0,
+      duration: 700,
+      ease: 'Cubic.Out',
+      onComplete: () => fireball.destroy(),
+    })
+
+    const shock = this.add.graphics({ x, y }).setDepth(30)
+
+    shock.lineStyle(1.2, 0xfff2b0, 1)
+    shock.strokeCircle(0, 0, 8)
+    shock.setBlendMode(Phaser.BlendModes.ADD)
+    this.minimapCamera.ignore(shock)
+    this.tweens.add({
+      targets: shock,
+      scale: 10,
+      alpha: 0,
+      duration: 650,
+      ease: 'Cubic.Out',
+      onComplete: () => shock.destroy(),
     })
   }
 
