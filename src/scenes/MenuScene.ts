@@ -2,8 +2,10 @@ import Phaser from 'phaser'
 import { SCENE_KEYS } from '../config/sceneKeys'
 import { createTextButton } from '../ui/createTextButton'
 import { hasSeenIntro } from './IntroScene'
+import { ACHIEVEMENTS, loadEarned } from '../run/achievements'
+import { formatTime, loadRecords } from '../run/records'
 import { resetNight } from '../run/runState'
-import { addText } from '../ui/theme'
+import { FONT_FAMILY, addText } from '../ui/theme'
 import {
   FIREFLY_TEXTURE,
   createFireflyTexture,
@@ -36,6 +38,8 @@ export class MenuScene extends Phaser.Scene {
     // no caminho de terra à direita, longe do cachorro e da bomba
     const titleX = 600
     const buttonsX = 660
+
+    this.showRecords()
 
     const title = addText(this, titleX, 62, 'BRAKAR', 'title')
 
@@ -149,6 +153,35 @@ export class MenuScene extends Phaser.Scene {
       frequency: 260,
       maxAliveParticles: 22,
     })
+  }
+
+  /** Recordes no canto da tela de título: dá um motivo para jogar de novo. */
+  private showRecords(): void {
+    const records = loadRecords()
+
+    if (records.escapes === 0 && records.caught === 0) {
+      return
+    }
+
+    const lines = [
+      `Recorde: noite ${records.bestNight}`,
+      records.bestTimeMs
+        ? `Melhor fuga: ${formatTime(records.bestTimeMs)}`
+        : 'Ainda sem fuga',
+      `Fugas: ${records.escapes}  ·  Capturas: ${records.caught}`,
+      `Conquistas: ${loadEarned().length}/${ACHIEVEMENTS.length}`,
+    ]
+
+    this.add
+      .text(18, 14, lines, {
+        fontFamily: FONT_FAMILY,
+        fontSize: '15px',
+        color: '#f2ead3',
+        lineSpacing: 6,
+        stroke: '#050a07',
+        strokeThickness: 4,
+      })
+      .setDepth(5)
   }
 
   /** Brilho vermelho dos olhos (gradiente) e faísca do pavio. */

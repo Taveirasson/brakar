@@ -30,6 +30,7 @@ Feito:
 26. Toque: botão de pausa (II) no HUD abaixo do minimapa (não existe ESC no celular) e dica de controles sem SHIFT/M em telas de toque. Testado no navegador.
 27. Pausa com botão SOM: LIGADO/DESLIGADO (útil no celular, sem tecla M) e layout de 4 botões. Testado no navegador.
 28. Minimapa útil: vagalumes (amarelo-limão), ossos (branco) e moitas (verde) aparecem nas células já visitadas e somem quando coletados. Testado no navegador.
+29. Recordes no menu: canto superior esquerdo mostra recorde de noite, melhor fuga, fugas/capturas e conquistas X/6 (só aparece depois da primeira partida). Testado no navegador.
 
 NOVO FOCO pedido pelo usuário: (a) paredes/labirinto com mais saídas, (b) visual: efeitos e sprites melhores, (c) história no começo (cutscene). Próximas: efeitos de partículas/sprites melhores (sprites do Pipoca/Estouro, sombras sob os personagens, partículas de coleta, reforçar visual da saída/estrada).
 
