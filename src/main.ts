@@ -8,6 +8,7 @@ import { VictoryScene } from './scenes/VictoryScene'
 import { GameOverScene } from './scenes/GameOverScene'
 import { LockedExitScene } from './scenes/LockedExitScene'
 import { ShopScene } from './scenes/ShopScene'
+import { HistoryScene } from './scenes/HistoryScene'
 import { IntroScene } from './scenes/IntroScene'
 import { HudScene } from './scenes/HudScene'
 import { NotificationScene } from './scenes/NotificationScene'
@@ -47,6 +48,7 @@ const config: Phaser.Types.Core.GameConfig = {
     LockedExitScene,
     IntroScene,
     ShopScene,
+    HistoryScene,
     HudScene,
     NotificationScene,
     VictoryScene,

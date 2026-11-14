@@ -211,7 +211,7 @@ export class MenuScene extends Phaser.Scene {
         : 'Desafio do dia: novo labirinto hoje'
 
     if (records.escapes === 0 && records.caught === 0 && streak === 0) {
-      this.addInfoText([dailyLine])
+      this.addInfoText([dailyLine, '▸ Ver histórico'])
       return
     }
 
@@ -224,6 +224,7 @@ export class MenuScene extends Phaser.Scene {
       `Conquistas: ${loadEarned().length}/${ACHIEVEMENTS.length}`,
       streak > 0 ? `🔥 Sequência diária: ${streak}` : '',
       dailyLine,
+      '▸ Ver histórico',
     ].filter(Boolean)
 
     this.addInfoText(lines)
@@ -256,7 +257,7 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private addInfoText(lines: string[]): void {
-    this.add
+    const text = this.add
       .text(18, 14, lines, {
         fontFamily: FONT_FAMILY,
         fontSize: '15px',
@@ -266,6 +267,9 @@ export class MenuScene extends Phaser.Scene {
         strokeThickness: 4,
       })
       .setDepth(5)
+
+    text.setInteractive({ useHandCursor: true })
+    text.on('pointerdown', () => this.scene.start(SCENE_KEYS.history))
   }
 
   /** Brilho vermelho dos olhos (gradiente) e faísca do pavio. */

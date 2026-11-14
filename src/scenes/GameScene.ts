@@ -57,6 +57,7 @@ import {
 } from '../run/runState'
 import { unlockAchievements } from '../run/achievements'
 import { recordMissions } from '../run/missions'
+import { recordHistory } from '../run/history'
 import { OWL_COOLDOWN_MS, owlActive, owlShouldHoot } from '../run/owl'
 import {
   Tutorial,
@@ -1056,6 +1057,10 @@ export class GameScene extends Phaser.Scene {
       this.mode === 'survival' ? this.survivalEscape(timeMs) : undefined
     const result =
       daily || survival ? undefined : recordEscape(timeMs, this.night)
+    if (this.mode === 'normal') {
+      recordHistory(timeMs, this.night)
+    }
+
     const missions = this.missionReward(true, timeMs)
     const achievements = this.earnAchievements(true, timeMs)
     const bones = this.bankBones(true, missions.reward)
