@@ -1,17 +1,22 @@
 import Phaser from 'phaser'
 import { SCENE_KEYS } from '../config/sceneKeys'
 import { createTextButton } from '../ui/createTextButton'
+import { formatTime, type Records } from '../run/records'
 import { addBackdrop, addPanel, addText, THEME } from '../ui/theme'
 
 export class GameOverScene extends Phaser.Scene {
   private night = 1
+  private timeMs = 0
+  private records?: Records
 
   constructor() {
     super(SCENE_KEYS.gameOver)
   }
 
-  init(data: { night?: number }): void {
+  init(data: { night?: number; timeMs?: number; records?: Records }): void {
     this.night = data.night ?? 1
+    this.timeMs = data.timeMs ?? 0
+    this.records = data.records
   }
 
   create(): void {
@@ -36,10 +41,22 @@ export class GameOverScene extends Phaser.Scene {
       'body',
     )
 
+    const best = this.records?.bestTimeMs
+    addText(
+      this,
+      centerX,
+      centerY - 30,
+      [
+        `Tempo na mata: ${formatTime(this.timeMs)}`,
+        best ? `Melhor fuga: ${formatTime(best)}` : 'Você ainda não escapou.',
+      ],
+      'muted',
+    )
+
     createTextButton({
       scene: this,
       x: centerX,
-      y: centerY + 45,
+      y: centerY + 60,
       label: 'TENTAR DE NOVO',
       onClick: () => {
         this.restartGame()
@@ -49,12 +66,17 @@ export class GameOverScene extends Phaser.Scene {
     createTextButton({
       scene: this,
       x: centerX,
-      y: centerY + 115,
+      y: centerY + 125,
       label: 'VOLTAR AO MENU',
       onClick: () => {
         this.returnToMenu()
       },
     })
+
+    this.input.keyboard?.once('keydown-R', () => this.restartGame())
+    this.input.keyboard?.once('keydown-SPACE', () => this.restartGame())
+    this.input.keyboard?.once('keydown-ENTER', () => this.restartGame())
+    addText(this, centerX, centerY + 175, 'R / ESPAÇO: tentar de novo', 'muted')
 
     this.cameras.main.fadeIn(400, 5, 10, 7)
   }

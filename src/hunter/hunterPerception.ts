@@ -3,10 +3,9 @@ import { hasLineOfSight, type Point, type Segment } from '../vision/lineOfSight'
 export interface PerceptionInput {
   hunter: Point
   player: Point
-  flashlightOn: boolean
-  /** Raio em pixels com a lanterna ligada (exige linha de visão). */
+  /** Raio de visão em pixels (exige linha de visão). */
   lightRadius: number
-  /** Raio em pixels com a lanterna desligada (ignora paredes). */
+  /** Raio curto em pixels em que ele sente o jogador mesmo atrás de paredes. */
   darkRadius: number
   walls: readonly Segment[]
 }
@@ -18,8 +17,8 @@ function distanceBetween(a: Point, b: Point): number {
 export function canPerceivePlayer(input: PerceptionInput): boolean {
   const distance = distanceBetween(input.hunter, input.player)
 
-  if (!input.flashlightOn) {
-    return distance <= input.darkRadius
+  if (distance <= input.darkRadius) {
+    return true
   }
 
   return (

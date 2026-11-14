@@ -7,67 +7,63 @@ const base = {
   darkRadius: 96,
   walls: [],
 }
+const wall2 = { x1: 64, y1: -50, x2: 64, y2: 50 }
 const wall = { x1: 100, y1: -50, x2: 100, y2: 50 }
 
 describe('canPerceivePlayer', () => {
-  it('lanterna ligada dentro do raio', () => {
+  it('dentro do raio de visão', () => {
     expect(
       canPerceivePlayer({
         ...base,
         player: { x: 256, y: 0 },
-        flashlightOn: true,
       }),
     ).toBe(true)
   })
 
-  it('lanterna ligada fora do raio', () => {
+  it('fora do raio de visão', () => {
     expect(
       canPerceivePlayer({
         ...base,
         player: { x: 384, y: 0 },
-        flashlightOn: true,
       }),
     ).toBe(false)
   })
 
-  it('lanterna ligada com parede no meio', () => {
+  it('com parede no meio', () => {
     expect(
       canPerceivePlayer({
         ...base,
         player: { x: 256, y: 0 },
-        flashlightOn: true,
         walls: [wall],
       }),
     ).toBe(false)
   })
 
-  it('lanterna desligada bem perto', () => {
+  it('bem perto', () => {
     expect(
       canPerceivePlayer({
         ...base,
         player: { x: 64, y: 0 },
-        flashlightOn: false,
       }),
     ).toBe(true)
   })
 
-  it('lanterna desligada a duas células', () => {
+  it('a duas células com parede, fora do raio curto', () => {
     expect(
       canPerceivePlayer({
         ...base,
         player: { x: 128, y: 0 },
-        flashlightOn: false,
+        walls: [wall2],
       }),
     ).toBe(false)
   })
 
-  it('lanterna desligada perto ignora parede', () => {
+  it('perto ignora parede', () => {
     const closeWall = { x1: 40, y1: -50, x2: 40, y2: 50 }
     expect(
       canPerceivePlayer({
         ...base,
         player: { x: 64, y: 0 },
-        flashlightOn: false,
         walls: [closeWall],
       }),
     ).toBe(true)

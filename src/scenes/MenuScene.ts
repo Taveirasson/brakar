@@ -1,25 +1,13 @@
 import Phaser from 'phaser'
 import { SCENE_KEYS } from '../config/sceneKeys'
 import { createTextButton } from '../ui/createTextButton'
-import { addText, THEME } from '../ui/theme'
-import {
-  FOREST_TEXTURE,
-  groundFrameFor,
-  tileFrameFor,
-} from '../maze/forestTileset'
-import { TILE_SIZE } from '../maze/MazeLayout'
-import {
-  PIPOCA_ANIMATIONS,
-  PIPOCA_TEXTURE,
-} from '../characters/characterAnimationRules'
-import {
-  ensureAnimations,
-  loadCharacterSprites,
-} from '../characters/characterAnimations'
+import { addText } from '../ui/theme'
 import {
   FIREFLY_TEXTURE,
   createFireflyTexture,
 } from '../characters/forestProps'
+
+const MENU_BACKGROUND = 'menu-background'
 
 export class MenuScene extends Phaser.Scene {
   constructor() {
@@ -27,39 +15,24 @@ export class MenuScene extends Phaser.Scene {
   }
 
   preload(): void {
-    this.load.spritesheet(FOREST_TEXTURE, 'assets/tiles/forest.png', {
-      frameWidth: TILE_SIZE,
-      frameHeight: TILE_SIZE,
-    })
-    loadCharacterSprites(this)
+    this.load.image(MENU_BACKGROUND, 'images/menu.png')
   }
 
   create(): void {
-    const centerX = this.scale.width / 2
-    const centerY = this.scale.height / 2
+    this.createBackdrop()
 
-    this.createForestBackdrop()
+    // a arte ocupa a esquerda com o Pipoca; título no céu escuro e botões
+    // no caminho de terra à direita, longe do cachorro e da bomba
+    const titleX = 600
+    const buttonsX = 660
 
-    addText(this, centerX, centerY - 160, 'BRAKAR', 'title')
-    addText(
-      this,
-      centerX,
-      centerY - 108,
-      'Ajude o Pipoca a voltar para casa',
-      'body',
-    )
-
-    if (ensureAnimations(this, PIPOCA_TEXTURE, PIPOCA_ANIMATIONS)) {
-      this.add
-        .sprite(centerX, centerY - 35, PIPOCA_TEXTURE)
-        .setScale(3)
-        .play('pipoca-idle')
-    }
+    addText(this, titleX, 62, 'BRAKAR', 'title')
+    addText(this, titleX, 112, 'Ajude o Pipoca a voltar para casa', 'body')
 
     createTextButton({
       scene: this,
-      x: centerX,
-      y: centerY + 60,
+      x: buttonsX,
+      y: 400,
       label: 'INICIAR',
       onClick: () => {
         this.startGame()
@@ -68,8 +41,8 @@ export class MenuScene extends Phaser.Scene {
 
     createTextButton({
       scene: this,
-      x: centerX,
-      y: centerY + 125,
+      x: buttonsX,
+      y: 462,
       label: 'CONFIGURAÇÕES',
       onClick: () => {
         this.openConfigScene()
@@ -77,57 +50,13 @@ export class MenuScene extends Phaser.Scene {
     })
   }
 
-  /** Copas de árvore escurecidas ao fundo, vinheta e vagalumes flutuando. */
-  private createForestBackdrop(): void {
+  /** Ilustração de fundo (cobre a tela inteira) e vagalumes flutuando. */
+  private createBackdrop(): void {
     const { width, height } = this.scale
 
-    if (this.textures.exists(FOREST_TEXTURE)) {
-      const size = TILE_SIZE * 2
-
-      const rows = Math.ceil(height / size) + 1
-      const columns = Math.ceil(width / size) + 1
-
-      for (let row = 0; row < rows; row++) {
-        for (let column = 0; column < columns; column++) {
-          this.add
-            .image(
-              column * size,
-              row * size,
-              FOREST_TEXTURE,
-              groundFrameFor(true, row, column, false),
-            )
-            .setOrigin(0)
-            .setScale(2)
-            .setTint(0x3a4a3e)
-        }
-      }
-
-      // duas camadas de copas, a segunda deslocada meio tile, para cobrir os
-      // vãos entre as árvores e não formar uma grade regular
-      for (const offset of [0, size / 2]) {
-        for (let row = -1; row < rows; row++) {
-          for (let column = -1; column < columns; column++) {
-            this.add
-              .image(
-                column * size + offset,
-                row * size + offset,
-                FOREST_TEXTURE,
-                tileFrameFor('tree', row + offset, column, false),
-              )
-              .setOrigin(0)
-              .setScale(2)
-              .setTint(0x3a4a3e)
-          }
-        }
-      }
-    }
-
-    // escurece tudo e abre uma clareira escura no centro para o texto respirar
-    const shade = this.add.graphics()
-    shade.fillStyle(THEME.backdrop, 0.55)
-    shade.fillRect(0, 0, width, height)
-    shade.fillStyle(THEME.backdrop, 0.6)
-    shade.fillEllipse(width / 2, height / 2, 560, 470)
+    this.add
+      .image(width / 2, height / 2, MENU_BACKGROUND)
+      .setDisplaySize(width, height)
 
     createFireflyTexture(this)
     this.add.particles(0, 0, FIREFLY_TEXTURE, {

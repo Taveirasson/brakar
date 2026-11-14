@@ -1,11 +1,26 @@
 import Phaser from 'phaser'
 import { SCENE_KEYS } from '../config/sceneKeys'
 import { createTextButton } from '../ui/createTextButton'
-import { addBackdrop, addPanel, addText } from '../ui/theme'
+import { formatTime, type Records } from '../run/records'
+import { addBackdrop, addPanel, addText, THEME } from '../ui/theme'
 
 export class VictoryScene extends Phaser.Scene {
+  private timeMs = 0
+  private records?: Records
+  private isNewBest = false
+
   constructor() {
     super(SCENE_KEYS.victory)
+  }
+
+  init(data: {
+    timeMs?: number
+    records?: Records
+    isNewBest?: boolean
+  }): void {
+    this.timeMs = data.timeMs ?? 0
+    this.records = data.records
+    this.isNewBest = data.isNewBest ?? false
   }
 
   create(): void {
@@ -30,10 +45,24 @@ export class VictoryScene extends Phaser.Scene {
       'muted',
     )
 
+    addText(
+      this,
+      centerX,
+      centerY + 5,
+      [
+        this.isNewBest
+          ? `NOVO RECORDE: ${formatTime(this.timeMs)}`
+          : `Tempo: ${formatTime(this.timeMs)}`,
+        `Melhor: ${formatTime(this.records?.bestTimeMs ?? this.timeMs)}  ·  Fugas: ${this.records?.escapes ?? 1}`,
+      ],
+      this.isNewBest ? 'body' : 'muted',
+      this.isNewBest ? THEME.title : undefined,
+    )
+
     createTextButton({
       scene: this,
       x: centerX,
-      y: centerY + 45,
+      y: centerY + 80,
       label: 'JOGAR NOVAMENTE',
       onClick: () => {
         this.restartGame()
@@ -43,12 +72,16 @@ export class VictoryScene extends Phaser.Scene {
     createTextButton({
       scene: this,
       x: centerX,
-      y: centerY + 115,
+      y: centerY + 140,
       label: 'VOLTAR AO MENU',
       onClick: () => {
         this.returnToMenu()
       },
     })
+
+    this.input.keyboard?.once('keydown-R', () => this.restartGame())
+    this.input.keyboard?.once('keydown-SPACE', () => this.restartGame())
+    this.input.keyboard?.once('keydown-ENTER', () => this.restartGame())
 
     this.cameras.main.fadeIn(400, 5, 10, 7)
   }

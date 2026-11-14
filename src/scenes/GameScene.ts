@@ -30,8 +30,9 @@ import type { GamePhase } from '../config'
 import { findItemCellsByQuadrant } from '../maze/MazeItemPlacement'
 import type { NotificationScene } from './NotificationScene'
 import { getSavedMazeSize } from '../config/mazeSettings'
-import { castRay, type Segment } from '../vision/lineOfSight'
-import { moonlightAt } from '../vision/moonlight'
+import type { Segment } from '../vision/lineOfSight'
+import { recordCaught, recordEscape } from '../run/records'
+import { NIGHT_LIGHTING } from '../vision/moonlight'
 import { Hunter } from '../hunter/Hunter'
 import { GameEffects } from '../effects/GameEffects'
 import { canPerceivePlayer, isCaught } from '../hunter/hunterPerception'
@@ -81,19 +82,6 @@ const FIREFLY_LIGHT_INTENSITY = 1.2
 const CATCH_DISTANCE = (PLAYER_SIZE + HUNTER_SIZE) / 2
 const CATCH_EFFECT_MS = 400
 
-const FLASHLIGHT_RADIUS = 200 * MOVEMENT_SCALE
-// Folga (px) além do ponto de impacto para a copa da árvore ficar iluminada.
-const FLASHLIGHT_CANOPY_BLEED = 8
-const FLASHLIGHT_INNER_ANGLE = 30
-const FLASHLIGHT_OUTER_ANGLE = 100
-const FLASHLIGHT_COLOR = 0xffe6b3
-const FLASHLIGHT_INTENSITY = 2.4
-
-// Troca suave entre lanterna e luz da lua ao ligar/desligar a lanterna.
-const MOON_TRANSITION_MS = 300
-
-const FLASHLIGHT_RAY_COUNT = 181
-
 const MINIMAP_CELL_SIZE = 8
 const MINIMAP_PADDING = 12
 
@@ -131,19 +119,14 @@ export class GameScene extends Phaser.Scene {
   private inputDirection = { h: 0, v: 0 }
   private exit!: Phaser.Physics.Arcade.Image
   private exitBlink?: Phaser.Tweens.Tween
-  private flashlight?: Phaser.GameObjects.Light
-
-  private flashlightEnabled = false
-  /** 0 = lanterna acesa (escuro), 1 = lanterna apagada (luz da lua). */
-  private moonLevel = 0
-  private moonTween?: Phaser.Tweens.Tween
-  private flashlightToggleKey!: Phaser.Input.Keyboard.Key
 
   private cursorKeys!: Phaser.Types.Input.Keyboard.CursorKeys
   private wasdKeys!: MovementKeys
 
   private exitInformation!: FarthestCellResult
   private playerFoundExit = false
+  /** Tempo de jogo acumulado (não conta pausas nem telas por cima). */
+  private elapsedMs = 0
 
   private minimapCamera!: Phaser.Cameras.Scene2D.Camera
   private minimapGraphics!: Phaser.GameObjects.Graphics
@@ -171,15 +154,12 @@ export class GameScene extends Phaser.Scene {
     this.mazeSize = getSavedMazeSize()
     this.worldPixels = worldSize(this.mazeSize)
     this.playerFoundExit = false
+    this.elapsedMs = 0
 
     this.gamePhase = 'litExploration'
     this.collectedItems = 0
     this.visibilityMaskCreated = false
 
-    this.flashlight = undefined
-    this.flashlightEnabled = false
-    this.moonLevel = 0
-    this.moonTween = undefined
     this.visibilityMask = undefined
     this.visibilityMaskCreated = false
 
@@ -207,18 +187,16 @@ export class GameScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number): void {
+    if (this.gamePhase !== 'victory' && this.gamePhase !== 'defeat') {
+      this.elapsedMs += delta
+    }
+
     this.updatePlayerMovement()
     this.updatePlayerAnimation(delta)
     this.updateHunter(delta)
     this.effects?.update(this.hunter?.state === 'hunting')
 
-    if (Phaser.Input.Keyboard.JustDown(this.flashlightToggleKey)) {
-      this.toggleFlashlight()
-    }
-
     if (this.visibilityMaskCreated) {
-      this.updateFlashlightPosition()
-      this.updateFlashlightDirection()
       this.updateVisibilityMask()
     }
 
@@ -374,25 +352,33 @@ export class GameScene extends Phaser.Scene {
     const insideMaze = (row: number, column: number) =>
       row >= 0 && row < mazeTiles && column >= 0 && column < mazeTiles
 
+    // a camada de copas é deslocada meio tile para baixo/direita: sem cobrir a
+    // última linha/coluna do labirinto, sobraria um vão ralo na borda inferior
+    // e direita (a esquerda e o topo já ficam cobertos pelo tile vizinho)
+    const lastTile = mazeTiles - 1
+
     for (let row = 0; row < total; row++) {
       for (let column = 0; column < total; column++) {
         const mazeRow = row - pad
         const mazeColumn = column - pad
+        const isMaze = insideMaze(mazeRow, mazeColumn)
 
-        if (insideMaze(mazeRow, mazeColumn)) {
+        if (isMaze && mazeRow !== lastTile && mazeColumn !== lastTile) {
           continue
         }
 
-        ground.putTileAt(
-          groundFrameFor(true, mazeRow, mazeColumn, false),
-          column,
-          row,
-        )
-        trees.putTileAt(
-          tileFrameFor('tree', mazeRow, mazeColumn, false),
-          column,
-          row,
-        )
+        if (!isMaze) {
+          ground.putTileAt(
+            groundFrameFor(true, mazeRow, mazeColumn, false),
+            column,
+            row,
+          )
+          trees.putTileAt(
+            tileFrameFor('tree', mazeRow, mazeColumn, false),
+            column,
+            row,
+          )
+        }
 
         // o tile deslocado ocupa 2x2 tiles da grade: pode cobrir árvores da
         // borda do labirinto, mas nunca a trilha
@@ -665,10 +651,6 @@ export class GameScene extends Phaser.Scene {
       left: Phaser.Input.Keyboard.KeyCodes.A,
       right: Phaser.Input.Keyboard.KeyCodes.D,
     }) as MovementKeys
-
-    this.flashlightToggleKey = this.input.keyboard.addKey(
-      Phaser.Input.Keyboard.KeyCodes.F,
-    )
   }
 
   private configureCollisions(): void {
@@ -749,37 +731,6 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private updateFlashlightDirection(): void {
-    if (!this.flashlight) {
-      return
-    }
-
-    const pointer = this.input.activePointer
-    const camera = this.cameras.main
-
-    pointer.updateWorldPoint(camera)
-
-    const distance = Phaser.Math.Distance.Between(
-      this.player.x,
-      this.player.y,
-      pointer.worldX,
-      pointer.worldY,
-    )
-
-    if (distance < 4) {
-      return
-    }
-
-    const direction = Phaser.Math.Angle.Between(
-      this.player.x,
-      this.player.y,
-      pointer.worldX,
-      pointer.worldY,
-    )
-
-    this.flashlight.setConeRotation(direction)
-  }
-
   private handlePlayerFoundExit(): void {
     if (this.gamePhase === 'litExploration') {
       this.showLockedExitMessage()
@@ -822,13 +773,16 @@ export class GameScene extends Phaser.Scene {
     this.playerFoundExit = true
     this.player.setVelocity(0, 0)
 
+    const timeMs = Math.round(this.elapsedMs)
+    const result = recordEscape(timeMs)
+
     this.physics.pause()
     this.cameras.main.flash(250, 244, 211, 94)
 
     this.time.delayedCall(300, () => {
       this.clearNotifications()
       this.scene.pause()
-      this.scene.run(SCENE_KEYS.victory)
+      this.scene.run(SCENE_KEYS.victory, { timeMs, ...result })
     })
   }
 
@@ -857,53 +811,9 @@ export class GameScene extends Phaser.Scene {
     this.scene.run(SCENE_KEYS.pause)
   }
 
-  private createFlashlight(): void {
-    this.flashlight = this.lights.addLight(
-      this.player.x,
-      this.player.y,
-      FLASHLIGHT_RADIUS,
-      FLASHLIGHT_COLOR,
-      FLASHLIGHT_INTENSITY,
-    )
-
-    this.flashlight.setCone(
-      0,
-      Phaser.Math.DegToRad(FLASHLIGHT_INNER_ANGLE),
-      Phaser.Math.DegToRad(FLASHLIGHT_OUTER_ANGLE),
-    )
-  }
-
   private configureLighting(): void {
     this.lights.enable()
     this.lights.setAmbientColor(0xffffff)
-  }
-
-  private updateFlashlightPosition(): void {
-    if (!this.flashlight) {
-      return
-    }
-    this.flashlight.x = this.player.x
-    this.flashlight.y = this.player.y
-  }
-
-  private castVisibilityRay(angle: number): Phaser.Math.Vector2 {
-    const hit = castRay(
-      { x: this.player.x, y: this.player.y },
-      angle,
-      FLASHLIGHT_RADIUS,
-      this.wallSegments,
-    )
-
-    // O raio para exatamente na face da árvore, deixando o tile voltado para o
-    // jogador fora do polígono de luz. Avança um pouco além do ponto de impacto
-    // (só quando acertou parede) para a copa ficar iluminada.
-    const distance = Math.hypot(hit.x - this.player.x, hit.y - this.player.y)
-    const bleed = distance < FLASHLIGHT_RADIUS ? FLASHLIGHT_CANOPY_BLEED : 0
-
-    return new Phaser.Math.Vector2(
-      hit.x + Math.cos(angle) * bleed,
-      hit.y + Math.sin(angle) * bleed,
-    )
   }
 
   private createVisibilityMask(): void {
@@ -923,17 +833,14 @@ export class GameScene extends Phaser.Scene {
 
   private updateVisibilityMask(): void {
     const visibilityMask = this.visibilityMask
-    const flashlight = this.flashlight
 
-    if (!visibilityMask || !flashlight) {
+    if (!visibilityMask) {
       return
     }
 
     visibilityMask.clear()
 
-    const lighting = moonlightAt(this.moonLevel)
-
-    visibilityMask.fillStyle(0xffffff, lighting.worldVisibility)
+    visibilityMask.fillStyle(0xffffff, NIGHT_LIGHTING.worldVisibility)
 
     // cobre também a mata em volta do labirinto
     const margin = OUTER_FOREST_TILES * TILE_SIZE
@@ -954,38 +861,9 @@ export class GameScene extends Phaser.Scene {
       visibilityMask.fillCircle(
         this.player.x,
         this.player.y,
-        lighting.visionRadius * scale,
+        NIGHT_LIGHTING.visionRadius * scale,
       )
     }
-
-    if (!this.flashlightEnabled) {
-      return
-    }
-
-    const points: Phaser.Math.Vector2[] = [
-      new Phaser.Math.Vector2(this.player.x, this.player.y),
-    ]
-
-    const flashlightDirection = flashlight.coneRotation
-
-    const halfOuterAngle = Phaser.Math.DegToRad(FLASHLIGHT_OUTER_ANGLE / 2)
-
-    const firstRayAngle = flashlightDirection - halfOuterAngle
-
-    const totalAngle = halfOuterAngle * 2
-
-    for (let index = 0; index < FLASHLIGHT_RAY_COUNT; index++) {
-      const progress = index / (FLASHLIGHT_RAY_COUNT - 1)
-
-      const rayAngle = firstRayAngle + totalAngle * progress
-
-      points.push(this.castVisibilityRay(rayAngle))
-    }
-
-    visibilityMask.fillStyle(0xffffff, 1)
-    visibilityMask.fillPoints(points, true)
-
-    visibilityMask.fillCircle(this.player.x, this.player.y, PLAYER_SIZE * 0.7)
   }
 
   public beginItemSearch(): void {
@@ -996,7 +874,6 @@ export class GameScene extends Phaser.Scene {
     this.gamePhase = 'searchingItems'
     this.collectedItems = 0
 
-    this.turnFlashlightOn()
     this.turnOffWorldLights()
     this.resetMinimap()
     this.spawnRequiredItems()
@@ -1037,7 +914,6 @@ export class GameScene extends Phaser.Scene {
     const perceivesPlayer = canPerceivePlayer({
       hunter: hunter.position,
       player: { x: this.player.x, y: this.player.y },
-      flashlightOn: this.flashlightEnabled,
       lightRadius: this.hunterSettings.lightPerceptionRadiusCells * CELL_PITCH,
       darkRadius: DARK_PERCEPTION_CELLS * CELL_PITCH,
       walls: this.wallSegments,
@@ -1073,6 +949,8 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.gamePhase = 'defeat'
+    const timeMs = Math.round(this.elapsedMs)
+    const records = recordCaught()
     this.effects?.stop()
     this.player.setVelocity(0, 0)
 
@@ -1083,62 +961,12 @@ export class GameScene extends Phaser.Scene {
     this.time.delayedCall(CATCH_EFFECT_MS, () => {
       this.clearNotifications()
       this.scene.pause()
-      this.scene.run(SCENE_KEYS.gameOver, { night: 1 })
-    })
-  }
-
-  private turnFlashlightOn(): void {
-    if (!this.flashlight) {
-      this.createFlashlight()
-    }
-
-    this.flashlightEnabled = true
-
-    this.flashlight?.setIntensity(FLASHLIGHT_INTENSITY)
-
-    this.updateFlashlightDirection()
-    this.updateFlashlightPosition()
-  }
-
-  private toggleFlashlight(): void {
-    if (!this.flashlight) {
-      return
-    }
-
-    if (
-      this.gamePhase !== 'searchingItems' &&
-      this.gamePhase !== 'returningToExit'
-    ) {
-      return
-    }
-
-    this.flashlightEnabled = !this.flashlightEnabled
-
-    const intensity = this.flashlightEnabled ? FLASHLIGHT_INTENSITY : 0
-
-    this.flashlight.setIntensity(intensity)
-
-    this.fadeMoonlight(this.flashlightEnabled ? 0 : 1)
-    this.updateVisibilityMask()
-  }
-
-  /** Lanterna apagada acende a luz da lua (e vice-versa), com transição suave. */
-  private fadeMoonlight(target: number): void {
-    this.moonTween?.stop()
-
-    this.moonTween = this.tweens.add({
-      targets: this,
-      moonLevel: target,
-      duration: MOON_TRANSITION_MS,
-      ease: 'Sine.easeInOut',
-      onUpdate: () => {
-        this.lights.setAmbientColor(moonlightAt(this.moonLevel).ambientColor)
-      },
+      this.scene.run(SCENE_KEYS.gameOver, { night: 1, timeMs, records })
     })
   }
 
   private turnOffWorldLights(): void {
-    this.lights.setAmbientColor(moonlightAt(this.moonLevel).ambientColor)
+    this.lights.setAmbientColor(NIGHT_LIGHTING.ambientColor)
 
     if (!this.visibilityMaskCreated) {
       this.createVisibilityMask()
