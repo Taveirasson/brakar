@@ -153,3 +153,45 @@ export function findNearStartCell(
 
   return pool.length > 0 ? pickRandomCell(pool, random) : undefined
 }
+
+/**
+ * Células extras de vagalume quando o mapa pede mais que os 3 do começo: espalhadas
+ * (afastadas entre si, do início e da saída), preferindo becos. Se o espaçamento
+ * não couber, ele diminui até achar células.
+ */
+export function findExtraItemCells(
+  maze: MazeCell[][],
+  taken: CellPosition[],
+  count: number,
+  random: () => number = Math.random,
+): MazeCell[] {
+  const extra: MazeCell[] = []
+  const all = maze.flat()
+  const spacingFor = (spacing: number) =>
+    all.filter(
+      (cell) =>
+        !(cell.row === 0 && cell.column === 0) &&
+        [...taken, ...extra].every(
+          (other) =>
+            Math.abs(other.row - cell.row) +
+              Math.abs(other.column - cell.column) >=
+            spacing,
+        ),
+    )
+
+  while (extra.length < count) {
+    let pool: MazeCell[] = []
+
+    for (let spacing = 4; spacing >= 1 && pool.length === 0; spacing--) {
+      pool = spacingFor(spacing)
+    }
+
+    if (pool.length === 0) break
+
+    const deadEnds = pool.filter((cell) => isDeadEnd(cell))
+
+    extra.push(pickRandomCell(deadEnds.length > 0 ? deadEnds : pool, random))
+  }
+
+  return extra
+}

@@ -98,3 +98,8 @@ Ordem planejada (marque ao concluir; cada item conferido por captura e commitado
 7. [x] (feito: isTouchDevice, textos +1-2 px no toque, dicas de toque nas telas de fim, botão PULAR na história; conferido por captura) Celular: fontes mínimas maiores, botões mais altos em tela de toque, dica de toque na história e nas telas.
 8. [x] (feito: ui/menuNavigation.ts; setas/WASD + Enter/Espaço no menu, ajustes, pausa e bênçãos (1-3 também), ESC volta em ajustes; testado) Teclado no menu: setas + Enter navegam pelos botões (foco visível), ESC volta nas subtelas.
 9. [x] (feito: capturas finais em PC e celular de menu, ajustes, loja, histórico, bênçãos, pausa, vitória e derrota; recorde da sobrevivência destacado em dourado; ajustes com botões de 300 px) Nova rodada de captura (PC e celular) para conferir tudo e corrigir o que sobrou.
+
+## Extra — Vagalumes proporcionais ao mapa (feito)
+- src/run/fireflyCount.ts: 3 no padrão (8x8 e 10x10 normal); 16x16 = 5; 20x20 = 7; modo difícil +1. Desafio do dia (10x10, normal) e sobrevivência (8x8) seguem a mesma regra.
+- findExtraItemCells (MazeItemPlacement): além dos 3 por quadrante, células extras espalhadas (afastadas entre si, do início e da saída; preferem becos). O 1º vagalume continua perto do início.
+- Aviso inicial, HUD e bolinhas usam o número real. Testado no navegador em 6 combinações (8/10/16/20 e difícil), sem repetição de células.

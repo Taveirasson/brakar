@@ -32,7 +32,9 @@ import {
 } from '../maze/forestTileset'
 import { SCENE_KEYS } from '../config/sceneKeys'
 import type { GamePhase } from '../config'
+import { fireflyCount } from '../run/fireflyCount'
 import {
+  findExtraItemCells,
   findItemCellsByQuadrant,
   findNearStartCell,
   pathDistances,
@@ -216,7 +218,7 @@ export class GameScene extends Phaser.Scene {
   private gamePhase: GamePhase = 'opening'
 
   private collectedItems = 0
-  private readonly requiredItems = 3
+  private requiredItems = 3
 
   private mazeSize = 10
   private worldPixels = 0
@@ -312,6 +314,10 @@ export class GameScene extends Phaser.Scene {
         : this.mode === 'survival'
           ? SURVIVAL_MAZE_SIZE
           : getSavedMazeSize()
+    this.requiredItems = fireflyCount(
+      this.mazeSize,
+      this.mode === 'daily' ? 'normal' : getDifficulty(),
+    )
     this.random =
       this.mode === 'daily'
         ? createSeededRandom(hashString(`brakar-${dateKey()}`))
@@ -1283,7 +1289,7 @@ export class GameScene extends Phaser.Scene {
 
     this.showNotification(
       this.openingPlayed
-        ? 'JUNTE 3 VAGALUMES PARA CLAREAR A TRILHA ATÉ A ESTRADA'
+        ? `JUNTE ${this.requiredItems} VAGALUMES PARA CLAREAR A TRILHA ATÉ A ESTRADA`
         : `NOITE ${this.night}: JUNTE ${this.requiredItems} VAGALUMES`,
       '#d9ff6b',
       this.openingPlayed ? 2800 : 1600,
@@ -2192,6 +2198,16 @@ export class GameScene extends Phaser.Scene {
       this.maze,
       this.exitInformation.cell,
       this.random,
+    )
+
+    // mapa maior ou mais difícil: mais vagalumes, espalhados pelo labirinto
+    itemCells.push(
+      ...findExtraItemCells(
+        this.maze,
+        [this.exitInformation.cell, ...itemCells],
+        this.requiredItems - itemCells.length,
+        this.random,
+      ),
     )
 
     this.moveFirstFireflyNearStart(itemCells)

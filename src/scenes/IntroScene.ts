@@ -52,7 +52,7 @@ const SLIDES: Slide[] = [
     tint: 0xff7a7a,
   },
   {
-    text: 'Só os vagalumes iluminam o caminho de volta. Junte 3, ache a estrada... e não deixe o Estouro te alcançar.',
+    text: 'Só os vagalumes iluminam o caminho de volta. Junte todos, ache a estrada... e não deixe o Estouro te alcançar.',
     focus: { x: 480, y: 270 },
     zoom: 1.05,
     tint: 0xffffff,

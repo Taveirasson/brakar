@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { MazeGenerator } from './MazeGenerator'
-import { findNearStartCell, pathDistances } from './MazeItemPlacement'
+import {
+  findExtraItemCells,
+  findNearStartCell,
+  pathDistances,
+} from './MazeItemPlacement'
 
 describe('findNearStartCell', () => {
   it('acha uma célula a 3-5 passos do início, fora das excluídas', () => {
@@ -17,5 +21,19 @@ describe('findNearStartCell', () => {
       expect(steps).toBeGreaterThanOrEqual(3)
       expect(steps).toBeLessThanOrEqual(5)
     }
+  })
+})
+
+describe('findExtraItemCells', () => {
+  it('devolve a quantidade pedida, sem repetir células nem usar as ocupadas', () => {
+    const maze = new MazeGenerator(16, 16).generate()
+    const taken = [{ row: 15, column: 15 }]
+    const cells = findExtraItemCells(maze, taken, 4)
+    const keys = new Set(cells.map((c) => `${c.row},${c.column}`))
+
+    expect(cells).toHaveLength(4)
+    expect(keys.size).toBe(4)
+    expect(keys.has('15,15')).toBe(false)
+    expect(keys.has('0,0')).toBe(false)
   })
 })
