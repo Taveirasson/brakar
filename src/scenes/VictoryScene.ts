@@ -36,6 +36,8 @@ export class VictoryScene extends Phaser.Scene {
     const centerY = this.scale.height / 2
 
     addBackdrop(this, 0.88)
+    // confete entre o fundo escuro e o painel
+    this.launchConfetti()
     addPanel(this, centerX, centerY, 580, 400)
     addText(
       this,
@@ -113,6 +115,37 @@ export class VictoryScene extends Phaser.Scene {
     )
 
     this.cameras.main.fadeIn(400, 5, 10, 7)
+  }
+
+  /** Chuva de confete colorido caindo atrás do painel. */
+  private launchConfetti(): void {
+    const key = 'confetti'
+
+    if (!this.textures.exists(key)) {
+      const graphics = this.make.graphics({ x: 0, y: 0 })
+
+      graphics.fillStyle(0xffffff, 1)
+      graphics.fillRect(0, 0, 6, 3)
+      graphics.generateTexture(key, 6, 3)
+      graphics.destroy()
+    }
+
+    const emitter = this.add.particles(0, 0, key, {
+      x: { min: 0, max: this.scale.width },
+      y: -10,
+      lifespan: 4200,
+      speedY: { min: 90, max: 190 },
+      speedX: { min: -50, max: 50 },
+      gravityY: 40,
+      rotate: { min: 0, max: 360 },
+      scale: { min: 0.9, max: 1.8 },
+      tint: [0xf4d35e, 0x9fe870, 0xff6b6b, 0x6bc5ff, 0xffffff],
+      alpha: { start: 1, end: 0.2 },
+      frequency: 45,
+      maxAliveParticles: 90,
+    })
+
+    emitter.setDepth(0)
   }
 
   /** C ou clique: copia o resultado para compartilhar. */

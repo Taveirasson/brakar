@@ -248,6 +248,7 @@ export class GameScene extends Phaser.Scene {
       this.worldPixels,
     )
     this.configurePauseControl()
+    this.cameras.main.fadeIn(500, 5, 10, 7)
     this.startHud()
     this.startNotificationScene()
   }
