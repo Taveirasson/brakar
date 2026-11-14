@@ -13,6 +13,18 @@ export function nextNight(): number {
 export function resetNight(): void {
   currentNight = 1
   currentScore = 0
+  currentBoons = []
+}
+
+/** Bênçãos escolhidas na corrida atual (em memória). */
+let currentBoons: string[] = []
+
+export function getBoons(): string[] {
+  return currentBoons
+}
+
+export function addBoon(id: string): void {
+  currentBoons = [...currentBoons, id]
 }
 
 /** Pontos acumulados na corrida de sobrevivência (em memória). */

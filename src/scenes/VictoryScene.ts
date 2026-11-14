@@ -244,7 +244,8 @@ export class VictoryScene extends Phaser.Scene {
     }
 
     this.scene.stop(SCENE_KEYS.game)
-    this.scene.start(SCENE_KEYS.game)
+    // noites seguidas: escolhe uma bênção antes de entrar na mata
+    this.scene.start(this.isDaily ? SCENE_KEYS.game : SCENE_KEYS.boon)
   }
 
   private returnToMenu(): void {

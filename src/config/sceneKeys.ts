@@ -5,6 +5,7 @@ export const SCENE_KEYS = {
   intro: 'IntroScene',
   shop: 'ShopScene',
   history: 'HistoryScene',
+  boon: 'BoonScene',
   hud: 'HudScene',
   notifications: 'NotificationScene',
   victory: 'VictoryScene',

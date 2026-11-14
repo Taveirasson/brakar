@@ -57,6 +57,7 @@ import {
   addScore,
   getGameMode,
   consumeOpening,
+  getBoons,
   getNight,
   getScore,
   type GameMode,
@@ -64,6 +65,7 @@ import {
 import { unlockAchievements } from '../run/achievements'
 import { recordMissions } from '../run/missions'
 import { comboBonus } from '../run/combo'
+import { applyBoons, type BoonSummary } from '../run/boons'
 import { recordHistory } from '../run/history'
 import { OWL_COOLDOWN_MS, owlActive, owlShouldHoot } from '../run/owl'
 import { hunterGraceMs } from '../hunter/hunterSettings'
@@ -247,6 +249,7 @@ export class GameScene extends Phaser.Scene {
   private owlCooldownMs = 0
   private openingTimer?: Phaser.Time.TimerEvent
   private veteran = false
+  private boons!: BoonSummary
   private openingPlayed = true
   private lastFireflyAt: number | null = null
   private comboBones = 0
@@ -341,7 +344,11 @@ export class GameScene extends Phaser.Scene {
       this.random,
       this.mode === 'daily',
     )
-    this.effects_ = combineModifiers(this.modifiers)
+    this.boons = applyBoons(
+      combineModifiers(this.modifiers),
+      this.mode === 'daily' ? [] : getBoons(),
+    )
+    this.effects_ = this.boons.effects
     this.lighting = applyModifiersToLighting(NIGHT_LIGHTING, this.effects_)
     this.hunterSettings = applyModifiersToHunter(
       applyDifficulty(
@@ -1030,6 +1037,7 @@ export class GameScene extends Phaser.Scene {
       PLAYER_SPEED *
       (step.sprinting ? SPRINT_MULTIPLIER : 1) *
       (this.elapsedMs < this.speedUntil ? SPEED_BOOST : 1) *
+      this.boons.speed *
       mudFactor
     const speed = isMovingDiagonally ? topSpeed / Math.SQRT2 : topSpeed
 
@@ -1259,6 +1267,11 @@ export class GameScene extends Phaser.Scene {
     this.spawnOwl()
     this.announceModifiers()
     this.startTutorial()
+
+    if (this.boons.startShield) {
+      this.activateShield()
+    }
+
     this.showNotification(
       this.openingPlayed
         ? 'JUNTE 3 VAGALUMES PARA CLAREAR A TRILHA ATÉ A ESTRADA'
@@ -1805,7 +1818,7 @@ export class GameScene extends Phaser.Scene {
 
   /** Período de graça: o Estouro só acorda depois de alguns segundos (mais na noite 1). */
   private scheduleHunter(): void {
-    const graceMs = hunterGraceMs(this.night)
+    const graceMs = hunterGraceMs(this.night) + this.boons.graceMs
 
     this.time.delayedCall(graceMs, () => {
       if (
@@ -2449,7 +2462,7 @@ export class GameScene extends Phaser.Scene {
 
   /** Seta para o vagalume mais próximo (ou para a estrada, com a saída aberta) nas primeiras fugas. */
   private updateCompass(hud: HudScene): void {
-    if (this.veteran || !this.compassPhase()) {
+    if ((this.veteran && !this.boons.compass) || !this.compassPhase()) {
       hud.setCompass(null)
 
       return
