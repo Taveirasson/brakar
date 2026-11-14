@@ -27,7 +27,13 @@ export class MenuScene extends Phaser.Scene {
     const buttonsX = 660
 
     addText(this, titleX, 62, 'BRAKAR', 'title')
-    addText(this, titleX, 112, 'Ajude o Pipoca a voltar para casa', 'body')
+    addText(
+      this,
+      titleX,
+      112,
+      'Ajude o Pipoca a voltar para casa',
+      'body',
+    ).setStroke('#050a07', 5)
 
     createTextButton({
       scene: this,

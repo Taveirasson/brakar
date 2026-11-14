@@ -28,6 +28,7 @@ import {
 import { SCENE_KEYS } from '../config/sceneKeys'
 import type { GamePhase } from '../config'
 import { findItemCellsByQuadrant } from '../maze/MazeItemPlacement'
+import type { HudScene } from './HudScene'
 import type { NotificationScene } from './NotificationScene'
 import { getSavedMazeSize } from '../config/mazeSettings'
 import type { Segment } from '../vision/lineOfSight'
@@ -81,6 +82,7 @@ const FIREFLY_LIGHT_INTENSITY = 1.2
 
 const CATCH_DISTANCE = (PLAYER_SIZE + HUNTER_SIZE) / 2
 const CATCH_EFFECT_MS = 400
+const DANGER_RADIUS_CELLS = 5
 
 const MINIMAP_CELL_SIZE = 8
 const MINIMAP_PADDING = 12
@@ -183,6 +185,7 @@ export class GameScene extends Phaser.Scene {
       this.worldPixels,
     )
     this.configurePauseControl()
+    this.startHud()
     this.startNotificationScene()
   }
 
@@ -201,6 +204,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.updateVisitedMap()
+    this.updateHud()
   }
 
   private generateMaze(): void {
@@ -1107,6 +1111,49 @@ export class GameScene extends Phaser.Scene {
       '#fff2b0',
       2200,
     )
+  }
+
+  private startHud(): void {
+    this.scene.launch(SCENE_KEYS.hud)
+    this.scene.bringToTop(SCENE_KEYS.hud)
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.scene.stop(SCENE_KEYS.hud)
+    })
+  }
+
+  private updateHud(): void {
+    if (!this.scene.isActive(SCENE_KEYS.hud)) {
+      return
+    }
+
+    const hud = this.scene.get(SCENE_KEYS.hud) as HudScene
+    const searching =
+      this.gamePhase === 'searchingItems' ||
+      this.gamePhase === 'returningToExit'
+
+    hud.setTime(this.elapsedMs)
+    hud.setFireflies(this.collectedItems, searching ? this.requiredItems : null)
+    hud.setDanger(this.dangerLevel())
+  }
+
+  /** Proximidade do Estouro: 0 longe, 1 encostando; caçando nunca fica abaixo de 0,35. */
+  private dangerLevel(): number {
+    const hunter = this.hunter
+
+    if (!hunter || this.gamePhase === 'defeat') {
+      return 0
+    }
+
+    const distance = Phaser.Math.Distance.Between(
+      hunter.position.x,
+      hunter.position.y,
+      this.player.x,
+      this.player.y,
+    )
+    const byDistance = 1 - distance / (DANGER_RADIUS_CELLS * CELL_PITCH)
+
+    return Math.max(byDistance, hunter.state === 'hunting' ? 0.35 : 0)
   }
 
   /** Evita que um aviso pendente apareça por cima da tela de vitória ou derrota. */

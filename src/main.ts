@@ -7,6 +7,7 @@ import { PauseScene } from './scenes/PauseScene'
 import { VictoryScene } from './scenes/VictoryScene'
 import { GameOverScene } from './scenes/GameOverScene'
 import { LockedExitScene } from './scenes/LockedExitScene'
+import { HudScene } from './scenes/HudScene'
 import { NotificationScene } from './scenes/NotificationScene'
 import { ConfigurationScene } from './scenes/ConfigurationScene'
 
@@ -42,6 +43,7 @@ const config: Phaser.Types.Core.GameConfig = {
     GameScene,
     PauseScene,
     LockedExitScene,
+    HudScene,
     NotificationScene,
     VictoryScene,
     GameOverScene,
@@ -61,5 +63,10 @@ const fontReady = document.fonts
 const fontTimeout = new Promise((resolve) => setTimeout(resolve, 1500))
 
 Promise.race([fontReady, fontTimeout]).then(() => {
-  new Phaser.Game(config)
+  const game = new Phaser.Game(config)
+
+  if (import.meta.env.DEV) {
+    // só em desenvolvimento: permite inspecionar o jogo pelo console/testes
+    ;(window as unknown as { __game: Phaser.Game }).__game = game
+  }
 })
