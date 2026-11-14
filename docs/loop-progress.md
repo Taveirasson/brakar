@@ -16,6 +16,7 @@ Feito:
 13. Cutscene de abertura (IntroScene): 4 cenas com a arte do menu em 'câmera lenta' (zoom/pan e cor por cena), texto digitando, Espaço/Enter/clique avança, ESC pula. Aparece no primeiro INICIAR; botão HISTÓRIA no menu revê. Testado no navegador.
 14. Visual: folhas caindo em volta do Pipoca (cores variadas), névoa rasteira à deriva e brilho vermelho/laranja pulsante no Estouro que ilumina chão e árvores (mais forte caçando). Em GameEffects. Testado no navegador.
 15. Confete colorido na tela de vitória e fade-in ao entrar no jogo. Testado no navegador.
+DESCARTADO pelo usuário: sombras no chão sob Pipoca/Estouro (ficaram ruins; revertido). Não repetir.
 
 NOVO FOCO pedido pelo usuário: (a) paredes/labirinto com mais saídas, (b) visual: efeitos e sprites melhores, (c) história no começo (cutscene). Próximas: efeitos de partículas/sprites melhores (sprites do Pipoca/Estouro, sombras sob os personagens, partículas de coleta, reforçar visual da saída/estrada).
 
