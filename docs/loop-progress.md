@@ -23,6 +23,7 @@ Feito:
 19. Epílogos por noite (src/run/story.ts): cada fuga revela um pedaço novo da história (faróis, pegadas chamuscadas, coleira, lua vermelha, finais alternados). Testado no navegador.
 20. Novo sprite do Estouro (public/assets/sprites/estouro.png, mesmo formato 128x64): bomba preta com pavio e faísca, olhos vermelhos furiosos; linha hunt com dentes e mais brilho. Gerado por script (canvas) no navegador; o antigo está no histórico do git. Combina com a arte do menu. Testado no jogo.
 21. Derrota explosiva: ao ser pego o Estouro explode (bola de fogo, 60 faíscas, onda de choque, tremor, clarão) e o Pipoca some; tela de game over após 1 s. Testado no navegador.
+22. Pipoca expressivo: treme de medo (rotação aleatória até 5°) quando o Estouro está perto (perigo > 0,55) e dá um pulinho (escala 1,22) ao coletar vagalume/osso. Testado no navegador (ângulo, escala e retorno ao normal).
 
 NOVO FOCO pedido pelo usuário: (a) paredes/labirinto com mais saídas, (b) visual: efeitos e sprites melhores, (c) história no começo (cutscene). Próximas: efeitos de partículas/sprites melhores (sprites do Pipoca/Estouro, sombras sob os personagens, partículas de coleta, reforçar visual da saída/estrada).
 

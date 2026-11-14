@@ -106,6 +106,10 @@ const HIDING_RADIUS = 26
 const HIDING_MIN_HUNTER_DISTANCE = CELL_PITCH
 const HIDING_SPOTS_PER_CELL_ROW = 0.6
 const BUSH_SCALE = 1.25
+
+// Pipoca com medo: treme quando o Estouro chega perto.
+const FEAR_DANGER = 0.55
+const FEAR_MAX_ANGLE = 5
 const EXIT_GLOW_LOCKED_SCALE = 1.1
 const EXIT_GLOW_OPEN_SCALE = 3.2
 
@@ -1182,6 +1186,7 @@ export class GameScene extends Phaser.Scene {
 
     this.tweens.killTweensOf(bone)
     sfx.pickup()
+    this.hopForJoy()
     this.burstFirefly(bone.x, bone.y)
     bone.destroy()
     this.bonesCollected++
@@ -1546,6 +1551,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     sfx.pickup()
+    this.hopForJoy()
     this.burstFirefly(item.x, item.y)
     this.tweens.killTweensOf(item)
     this.lights.removeLight(glow)
@@ -1688,7 +1694,38 @@ export class GameScene extends Phaser.Scene {
     hud.setHidden(this.hidden)
     hud.setStamina(this.stamina.value, this.stamina.exhausted)
     hud.setFireflies(this.collectedItems, searching ? this.requiredItems : null)
-    hud.setDanger(this.dangerLevel())
+    const danger = this.dangerLevel()
+
+    hud.setDanger(danger)
+    this.updateFear(danger)
+  }
+
+  /** Treme (rotação aleatória pequena) quando o perigo passa de FEAR_DANGER. */
+  private updateFear(danger: number): void {
+    if (danger > FEAR_DANGER && this.gamePhase !== 'defeat') {
+      const strength = (danger - FEAR_DANGER) / (1 - FEAR_DANGER)
+
+      this.player.setAngle(
+        Phaser.Math.FloatBetween(-1, 1) * FEAR_MAX_ANGLE * (0.4 + strength),
+      )
+    } else if (this.player.angle !== 0 && this.gamePhase !== 'defeat') {
+      this.player.setAngle(0)
+    }
+  }
+
+  /** Pulinho de alegria ao pegar um vagalume ou osso. */
+  private hopForJoy(): void {
+    this.tweens.killTweensOf(this.player)
+    this.player.setScale(1)
+    this.tweens.add({
+      targets: this.player,
+      scaleX: 1.22,
+      scaleY: 1.22,
+      duration: 110,
+      yoyo: true,
+      ease: 'Quad.Out',
+      onComplete: () => this.player.setScale(1),
+    })
   }
 
   /** Proximidade do Estouro: 0 longe, 1 encostando; caçando nunca fica abaixo de 0,35. */
