@@ -11,6 +11,9 @@ export class HudScene extends Phaser.Scene {
   private fireflies!: Phaser.GameObjects.Text
   private nightLabel!: Phaser.GameObjects.Text
   private vignette!: Phaser.GameObjects.Image
+  private staminaBar!: Phaser.GameObjects.Graphics
+  private staminaValue = 1
+  private staminaExhausted = false
   private danger = 0
 
   constructor() {
@@ -41,6 +44,13 @@ export class HudScene extends Phaser.Scene {
       fontSize: '16px',
       color: THEME.muted,
     })
+    this.staminaBar = this.add.graphics()
+    this.add.text(16, 86, 'SHIFT: correr', {
+      ...style,
+      fontSize: '13px',
+      strokeThickness: 3,
+      color: THEME.muted,
+    })
     this.fireflies = this.add.text(16, 38, '', {
       ...style,
       color: THEME.title,
@@ -56,6 +66,29 @@ export class HudScene extends Phaser.Scene {
 
   setTime(ms: number): void {
     this.timer?.setText(formatTime(ms))
+  }
+
+  setStamina(value: number, exhausted: boolean): void {
+    this.staminaValue = value
+    this.staminaExhausted = exhausted
+    this.drawStamina()
+  }
+
+  private drawStamina(): void {
+    const bar = this.staminaBar
+
+    if (!bar) {
+      return
+    }
+
+    const width = 110
+    const color = this.staminaExhausted ? 0xc0504f : 0x9fe870
+
+    bar.clear()
+    bar.fillStyle(0x050a07, 0.7)
+    bar.fillRoundedRect(16, 106, width + 4, 10, 4)
+    bar.fillStyle(color, 1)
+    bar.fillRoundedRect(18, 108, Math.max(0, width * this.staminaValue), 6, 3)
   }
 
   setNight(night: number): void {

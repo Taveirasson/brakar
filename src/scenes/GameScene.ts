@@ -32,6 +32,12 @@ import type { HudScene } from './HudScene'
 import type { NotificationScene } from './NotificationScene'
 import { getSavedMazeSize } from '../config/mazeSettings'
 import type { Segment } from '../vision/lineOfSight'
+import {
+  FULL_STAMINA,
+  SPRINT_MULTIPLIER,
+  stepStamina,
+  type StaminaState,
+} from '../player/stamina'
 import { getNight } from '../run/runState'
 import { recordCaught, recordEscape } from '../run/records'
 import { NIGHT_LIGHTING } from '../vision/moonlight'
@@ -126,6 +132,8 @@ export class GameScene extends Phaser.Scene {
 
   private cursorKeys!: Phaser.Types.Input.Keyboard.CursorKeys
   private wasdKeys!: MovementKeys
+  private sprintKey!: Phaser.Input.Keyboard.Key
+  private stamina: StaminaState = FULL_STAMINA
 
   private exitInformation!: FarthestCellResult
   private playerFoundExit = false
@@ -160,6 +168,7 @@ export class GameScene extends Phaser.Scene {
     this.worldPixels = worldSize(this.mazeSize)
     this.playerFoundExit = false
     this.elapsedMs = 0
+    this.stamina = FULL_STAMINA
     this.night = getNight()
     this.hunterSettings = hunterSettingsForNight(this.night)
 
@@ -199,7 +208,7 @@ export class GameScene extends Phaser.Scene {
       this.elapsedMs += delta
     }
 
-    this.updatePlayerMovement()
+    this.updatePlayerMovement(delta)
     this.updatePlayerAnimation(delta)
     this.updateHunter(delta)
     this.effects?.update(this.hunter?.state === 'hunting')
@@ -660,6 +669,10 @@ export class GameScene extends Phaser.Scene {
       left: Phaser.Input.Keyboard.KeyCodes.A,
       right: Phaser.Input.Keyboard.KeyCodes.D,
     }) as MovementKeys
+
+    this.sprintKey = this.input.keyboard.addKey(
+      Phaser.Input.Keyboard.KeyCodes.SHIFT,
+    )
   }
 
   private configureCollisions(): void {
@@ -706,7 +719,7 @@ export class GameScene extends Phaser.Scene {
     this.player.setFrame(standingFrame(animation.key))
   }
 
-  private updatePlayerMovement(): void {
+  private updatePlayerMovement(delta = 16): void {
     if (this.playerFoundExit) {
       this.player.setVelocity(0, 0)
       return
@@ -729,7 +742,17 @@ export class GameScene extends Phaser.Scene {
 
     const isMovingDiagonally =
       horizontalDirection !== 0 && verticalDirection !== 0
-    const speed = isMovingDiagonally ? PLAYER_SPEED / Math.SQRT2 : PLAYER_SPEED
+    const step = stepStamina(
+      this.stamina,
+      delta,
+      this.sprintKey.isDown,
+      horizontalDirection !== 0 || verticalDirection !== 0,
+    )
+
+    this.stamina = step.state
+
+    const topSpeed = PLAYER_SPEED * (step.sprinting ? SPRINT_MULTIPLIER : 1)
+    const speed = isMovingDiagonally ? topSpeed / Math.SQRT2 : topSpeed
 
     if (horizontalDirection !== 0) {
       this.player.setVelocityX(horizontalDirection * speed)
@@ -1147,6 +1170,7 @@ export class GameScene extends Phaser.Scene {
 
     hud.setTime(this.elapsedMs)
     hud.setNight(this.night)
+    hud.setStamina(this.stamina.value, this.stamina.exhausted)
     hud.setFireflies(this.collectedItems, searching ? this.requiredItems : null)
     hud.setDanger(this.dangerLevel())
   }
